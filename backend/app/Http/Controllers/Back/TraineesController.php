@@ -83,6 +83,34 @@ class TraineesController extends Controller
         ]);
     }
 
+    /**
+     * List trainees who self-registered via the public engineer registration flow.
+     */
+    public function indexEngineers()
+    {
+        $isSaraUser = auth()->user()->email === 'sara@hadaf-hq.com';
+
+        $baseQuery = Trainee::with('company')->where('is_engineer', true);
+
+        if ($isSaraUser) {
+            return Inertia::render('Back/Trainees/EngineersIndex', [
+                'trainees' => (clone $baseQuery)
+                    ->select('id', 'name', 'identity_number', 'company_id', 'created_at')
+                    ->latest()
+                    ->paginate(20),
+                'isSaraView' => true,
+            ]);
+        }
+
+        return Inertia::render('Back/Trainees/EngineersIndex', [
+            'trainees' => (clone $baseQuery)
+                ->with('trainee_group')
+                ->latest()
+                ->paginate(20),
+            'isSaraView' => false,
+        ]);
+    }
+
     public function indexArchived()
     {
         return Inertia::render('Back/Trainees/IndexArchived', [

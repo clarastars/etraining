@@ -357,6 +357,11 @@ class Trainee extends Model implements HasMedia, SearchableLabels, Auditable
         return $this->hasMany(Invoice::class);
     }
 
+    public function recordedCourseEnrollments(): HasMany
+    {
+        return $this->hasMany(RecordedCourseEnrollment::class, 'trainee_id');
+    }
+
     public function getCompanyNameAttribute()
     {
         return optional($this->company)->name_ar;

@@ -69,7 +69,8 @@ class RolesService
         'edit-date-period',
         'can-create-recruitment-companies',
         'search-trainees-by-identity',
-        'view-trainee-identity-only'
+        'view-trainee-identity-only',
+        'manage-recorded-courses',
     ];
 
     public $instructorPermissions = [

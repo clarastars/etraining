@@ -18,6 +18,15 @@
                 <br/>
             </div>
 
+            <div class="container mx-auto grid px-6 pb-6" v-if="user && user.trainee">
+                <inertia-link
+                    :href="route('recorded-courses.index')"
+                    class="inline-flex items-center justify-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-sm font-semibold"
+                >
+                    {{ $t('words.recorded-courses-my-courses') }}
+                </inertia-link>
+            </div>
+
             <template v-if="this.trainee">
             <div class="container mx-auto grid p-6" v-if="this.trainee.zoho_contract_status !== 'completed' && this.trainee.must_sign">
                 <div class="bg-blue-100 rounded-lg p-10 border-blue-500 border-2 text-center md:text-right">

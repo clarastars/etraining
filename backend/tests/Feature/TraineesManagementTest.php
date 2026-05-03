@@ -72,6 +72,13 @@ class TraineesManagementTest extends TestCase
             ->assertSuccessful();
     }
 
+    public function test_user_can_access_engineers_list_page()
+    {
+        $this->actingAs($this->user)
+            ->get(route('back.trainees.engineers.index'))
+            ->assertSuccessful();
+    }
+
     public function test_user_can_see_new_trainee_form()
     {
         $this->actingAs($this->user)

@@ -39,6 +39,13 @@ class AppServiceProvider extends ServiceProvider
                     resource_path('lang/'. app()->getLocale() .'.json')
                 );
             },
+            'flash' => function () {
+                return [
+                    'success' => session('success'),
+                    'warning' => session('warning'),
+                    'error' => session('error'),
+                ];
+            },
         ]);
     }
 

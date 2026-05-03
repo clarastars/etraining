@@ -43,6 +43,15 @@
             </template>
         </sidebar-link>
 
+        <sidebar-link :link-value="route('back.trainees.engineers.index')" :active="$page.currentRouteName == 'back.trainees.engineers.index'">
+            <template #icon>
+                <img src="/img/student.svg" alt="" class="w-5 h-5">
+            </template>
+            <template #title>
+                <span class="ltr:ml-4 rtl:mr-4 hover:text-red-600 hover:font-bold">{{ $t('words.engineers') }}</span>
+            </template>
+        </sidebar-link>
+
 
         <sidebar-link :link-value="route('back.candidates.index')" :active="$page.currentRouteName == 'back.candidates.index'">
             <template #icon>

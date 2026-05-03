@@ -11,7 +11,7 @@
 <template>
     <nav class="text-black font-bold my-8" aria-label="Breadcrumb">
         <ol class="list-none p-0 inline-flex">
-            <span v-for="(crumb, index) in crumbs" :key="crumb.title">
+            <span v-for="(crumb, index) in crumbs" :key="index">
                 <li class="flex items-center" v-if="index+1 != crumbs.length">
                     <inertia-link v-if="crumb.link" :href="crumb.link">
                         <span v-if="crumb.title_raw">{{ crumb.title_raw }}</span>
