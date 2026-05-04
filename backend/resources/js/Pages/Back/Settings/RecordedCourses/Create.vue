@@ -16,7 +16,10 @@
         <jet-form-section @submitted="submitForm">
           <template #title>{{ $t("words.recorded-course-new") }}</template>
           <template #description>
-            {{ $t("words.recorded-course-help-unlock") }}
+            <span>{{ $t("words.recorded-course-help-unlock") }}</span>
+            <span class="block mt-2 text-gray-600">{{
+              $t("words.recorded-course-create-videos-on-edit")
+            }}</span>
           </template>
           <template #form>
             <div class="col-span-6 sm:col-span-4">
@@ -145,23 +148,6 @@
                       class="mt-2"
                     />
                   </div>
-                  <div class="sm:col-span-2">
-                    <jet-label
-                      :for="'video_' + index"
-                      :value="$t('words.recorded-course-lesson-video')"
-                    />
-                    <input
-                      :id="'video_' + index"
-                      type="file"
-                      accept="video/mp4,video/webm,video/quicktime"
-                      class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                      @change="onVideoChange($event, index)"
-                    />
-                    <jet-input-error
-                      :message="form.error('lessons.' + index + '.video')"
-                      class="mt-2"
-                    />
-                  </div>
                 </div>
                 <div class="mt-2">
                   <button
@@ -243,7 +229,6 @@ export default {
             {
               title_ar: "",
               title_en: "",
-              video: null,
             },
           ],
         },
@@ -254,21 +239,16 @@ export default {
     };
   },
   methods: {
-    onVideoChange(e, index) {
-      const file = e.target.files && e.target.files[0];
-      this.$set(this.form.lessons[index], "video", file || null);
-    },
     addLesson() {
       this.form.lessons.push({
         title_ar: "",
         title_en: "",
-        video: null,
       });
     },
     removeLesson(index) {
       this.form.lessons.splice(index, 1);
     },
-    buildPlainPayload() {
+    buildPayload() {
       return {
         name_ar: this.form.name_ar == null ? "" : String(this.form.name_ar),
         name_en: this.form.name_en == null ? "" : String(this.form.name_en),
@@ -281,18 +261,14 @@ export default {
         lessons: (this.form.lessons || []).map((lesson) => ({
           title_ar: lesson.title_ar == null ? "" : String(lesson.title_ar),
           title_en: lesson.title_en == null ? "" : String(lesson.title_en),
-          video: lesson.video instanceof File ? lesson.video : null,
         })),
       };
     },
     submitForm() {
-      // Use Inertia.visit directly with a plain payload so FormData serialization
-      // is reliable (Vue reactive graphs break this.$inertia.form().transform in some setups).
       Inertia.post(
         this.route("back.settings.recorded-courses.store"),
-        this.buildPlainPayload(),
+        this.buildPayload(),
         {
-          forceFormData: true,
           preserveScroll: true,
           onStart: () => {
             this.form.processing = true;

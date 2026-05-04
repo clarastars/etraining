@@ -15,8 +15,6 @@ class StoreRecordedCourseRequest extends FormRequest
 
     public function rules(): array
     {
-        $maxKb = (int) (config('media-library.max_file_size', 524288000) / 1024);
-
         return [
             'name_ar' => ['required', 'string', 'max:255'],
             'name_en' => ['required', 'string', 'max:255'],
@@ -27,12 +25,8 @@ class StoreRecordedCourseRequest extends FormRequest
             'lessons' => ['required', 'array', 'min:1'],
             'lessons.*.title_ar' => ['required', 'string', 'max:255'],
             'lessons.*.title_en' => ['nullable', 'string', 'max:255'],
-            'lessons.*.video' => [
-                'required',
-                'file',
-                'mimetypes:video/mp4,video/webm,video/quicktime',
-                'max:'.$maxKb,
-            ],
+            'lessons.*.video' => ['prohibited'],
+            'lessons.*.upload_token' => ['prohibited'],
         ];
     }
 }

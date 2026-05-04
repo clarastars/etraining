@@ -115,10 +115,114 @@
           ]"
       ></breadcrumb-container>
 
+      <div
+        v-if="$page.props.flash && ($page.props.flash.success || $page.props.flash.warning)"
+        class="col-span-6 mb-4 space-y-2"
+      >
+        <div
+          v-if="$page.props.flash.success"
+          class="p-3 bg-green-100 text-green-800 rounded-md"
+        >
+          {{ $page.props.flash.success }}
+        </div>
+        <div
+          v-if="$page.props.flash.warning"
+          class="p-3 bg-yellow-100 text-yellow-800 rounded-md"
+        >
+          {{ $page.props.flash.warning }}
+        </div>
+      </div>
+
       <validation-errors
         :errors="validationErrors"
         v-if="validationErrors"
       ></validation-errors>
+
+      <div
+        v-if="engineerRecordedCoursePanel"
+        class="col-span-6 mb-6 rounded-lg border-2 border-indigo-200 bg-indigo-50 p-6 shadow-sm"
+      >
+        <div class="flex flex-wrap items-start justify-between gap-4 mb-4">
+          <div>
+            <h2 class="text-xl font-bold text-indigo-900">
+              {{ $t("words.trainee-engineer-recorded-courses-title") }}
+            </h2>
+            <p class="mt-2 text-sm text-indigo-900 text-opacity-90 max-w-3xl">
+              {{ $t("words.trainee-engineer-recorded-courses-body") }}
+            </p>
+          </div>
+        </div>
+
+        <div v-if="engineerRecordedCoursePanel.enrollments.length" class="mb-6">
+          <h3 class="text-sm font-semibold text-gray-800 mb-2">
+            {{ $t("words.trainee-engineer-current-recorded-enrollments") }}
+          </h3>
+          <ul class="space-y-2 text-sm">
+            <li
+              v-for="enr in engineerRecordedCoursePanel.enrollments"
+              :key="enr.id"
+              class="flex flex-wrap items-center gap-3 bg-white rounded-md px-3 py-2 border border-indigo-100"
+            >
+              <span class="font-medium text-gray-900">{{
+                enr.course_name_en || enr.course_name_ar
+              }}</span>
+              <span class="text-gray-500 text-xs">{{ enr.enrolled_at }}</span>
+              <inertia-link
+                class="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                :href="
+                  route('back.settings.recorded-courses.edit', enr.recorded_course_id)
+                "
+              >
+                {{ $t("words.trainee-engineer-open-course-settings") }}
+              </inertia-link>
+            </li>
+          </ul>
+        </div>
+
+        <form
+          v-if="engineerRecordedCoursePanel.recorded_courses.length"
+          class="flex flex-wrap items-end gap-4"
+          @submit.prevent="submitEngineerRecordedCourseEnrollment"
+        >
+          <div class="flex-1 min-w-[220px]">
+            <jet-label
+              for="engineer_recorded_course_id"
+              :value="$t('words.trainee-engineer-select-course')"
+            />
+            <select
+              id="engineer_recorded_course_id"
+              v-model="engineerRecordedCourseForm.recorded_course_id"
+              class="mt-1 block w-full border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 rounded-md shadow-sm"
+            >
+              <option value="">{{ $t("words.trainee-engineer-select-course") }}</option>
+              <option
+                v-for="c in engineerRecordedCoursePanel.recorded_courses"
+                :key="c.id"
+                :value="c.id"
+              >
+                {{ c.name_en || c.name_ar }}
+              </option>
+            </select>
+            <jet-input-error
+              :message="engineerRecordedCourseForm.error('recorded_course_id')"
+              class="mt-2"
+            />
+          </div>
+          <jet-button
+            type="submit"
+            :class="{ 'opacity-25': engineerRecordedCourseForm.processing }"
+            :disabled="engineerRecordedCourseForm.processing"
+          >
+            {{ $t("words.trainee-engineer-enroll-to-course") }}
+          </jet-button>
+        </form>
+        <p
+          v-else
+          class="text-sm text-indigo-900 text-opacity-80"
+        >
+          {{ $t("words.nothing-is-here") }}
+        </p>
+      </div>
 
       <div class="grid grid-cols-6 gap-6">
 
@@ -1372,6 +1476,7 @@ export default {
     "trainee_group_trainees",
     "companies",
     "is_limited_view",
+    "engineerRecordedCoursePanel",
   ],
   components: {
     GosiContainer,
@@ -1399,6 +1504,9 @@ export default {
   },
   data() {
     return {
+      engineerRecordedCourseForm: this.$inertia.form({
+        recorded_course_id: "",
+      }),
       isRefreshing: false,
       isProfileMenuOpen: false,
       new_trainee_group: {
@@ -1611,6 +1719,20 @@ export default {
     document.removeEventListener('click', this.handleClickOutside);
   },
   methods: {
+    submitEngineerRecordedCourseEnrollment() {
+      if (!this.engineerRecordedCourseForm.recorded_course_id) {
+        return;
+      }
+      this.engineerRecordedCourseForm.post(
+        this.route("back.trainees.recorded-course-enrollments.store", this.trainee.id),
+        {
+          preserveScroll: true,
+          onSuccess: () => {
+            this.engineerRecordedCourseForm.reset();
+          },
+        }
+      );
+    },
     toggleProfileMenu() {
       this.isProfileMenuOpen = !this.isProfileMenuOpen;
     },

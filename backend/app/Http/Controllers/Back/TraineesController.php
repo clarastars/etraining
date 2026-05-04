@@ -15,6 +15,8 @@ use App\Models\Back\Company;
 use App\Models\Back\ExportTraineesToExcelJobTracker;
 use App\Models\Back\Instructor;
 use App\Models\Back\Invoice;
+use App\Models\Back\RecordedCourse;
+use App\Models\Back\RecordedCourseEnrollment;
 use App\Models\Back\Trainee;
 use App\Models\Back\TraineeBlockList;
 use App\Models\Back\TraineeCustomCertificate;
@@ -303,6 +305,7 @@ class TraineesController extends Controller
                 'marital_statuses' => collect([]),
                 'educational_levels' => collect([]),
                 'allowed_users_for_special_documents' => $allowedUsers,
+                'engineerRecordedCoursePanel' => null,
             ]);
         }
 
@@ -337,7 +340,55 @@ class TraineesController extends Controller
             'marital_statuses' => MaritalStatus::orderBy('order')->get(),
             'educational_levels' => EducationalLevel::orderBy('order')->get(),
             'allowed_users_for_special_documents' => $allowedUsers,
+            'engineerRecordedCoursePanel' => $this->engineerRecordedCoursePanelPayload(
+                Trainee::withTrashed()->findOrFail($id)
+            ),
         ]);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function engineerRecordedCoursePanelPayload(Trainee $trainee): ?array
+    {
+        if (! $trainee->is_engineer || ! auth()->user()->can('manage-recorded-courses')) {
+            return null;
+        }
+
+        $recordedCourses = RecordedCourse::query()
+            ->orderBy('name_en')
+            ->get(['id', 'name_ar', 'name_en'])
+            ->map(static fn (RecordedCourse $c): array => [
+                'id' => $c->id,
+                'name_ar' => $c->name_ar,
+                'name_en' => $c->name_en,
+            ])
+            ->values()
+            ->all();
+
+        $enrollments = RecordedCourseEnrollment::query()
+            ->where('trainee_id', $trainee->id)
+            ->with('recordedCourse')
+            ->orderByDesc('enrolled_at')
+            ->get()
+            ->map(static function (RecordedCourseEnrollment $e): array {
+                $course = $e->recordedCourse;
+
+                return [
+                    'id' => $e->id,
+                    'recorded_course_id' => $e->recorded_course_id,
+                    'course_name_ar' => $course?->name_ar ?? '',
+                    'course_name_en' => $course?->name_en ?? '',
+                    'enrolled_at' => $e->enrolled_at?->toIso8601String(),
+                ];
+            })
+            ->values()
+            ->all();
+
+        return [
+            'recorded_courses' => $recordedCourses,
+            'enrollments' => $enrollments,
+        ];
     }
 
     /**

@@ -76,6 +76,42 @@ class RecordedCourseLesson extends Model implements HasMedia
             ->toMediaCollection(self::VIDEO_COLLECTION);
     }
 
+    /**
+     * Attach a fully assembled upload from disk (e.g. chunked upload temp file) and remove the source file.
+     */
+    public function attachVideoFromAssembledFile(string $absolutePath, string $originalFilename): Media
+    {
+        $this->clearMediaCollection(self::VIDEO_COLLECTION);
+
+        $teamId = auth()->user()->currentTeam()->first()->id;
+        $storedName = $this->storedFileNameFromOriginal($originalFilename);
+
+        try {
+            return $this->addMedia($absolutePath)
+                ->usingFileName($storedName)
+                ->withAttributes([
+                    'team_id' => $teamId,
+                ])
+                ->toMediaCollection(self::VIDEO_COLLECTION);
+        } finally {
+            if (is_file($absolutePath)) {
+                @unlink($absolutePath);
+            }
+        }
+    }
+
+    private function storedFileNameFromOriginal(string $originalFilename): string
+    {
+        $ext = strtolower((string) pathinfo($originalFilename, PATHINFO_EXTENSION));
+        $allowedExt = ['mp4', 'webm', 'mov'];
+
+        if ($ext !== '' && in_array($ext, $allowedExt, true)) {
+            return Str::random(40).'.'.$ext;
+        }
+
+        return Str::random(40).'.mp4';
+    }
+
     public function getVideoMediaAttribute(): ?Media
     {
         return $this->getFirstMedia(self::VIDEO_COLLECTION);

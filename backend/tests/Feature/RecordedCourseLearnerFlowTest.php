@@ -35,9 +35,6 @@ class RecordedCourseLearnerFlowTest extends TestCase
      */
     private function createCourseTwoLessonsSaturdayOnly(User $admin): array
     {
-        $f1 = UploadedFile::fake()->create('l1.mp4', 200, 'video/mp4');
-        $f2 = UploadedFile::fake()->create('l2.mp4', 200, 'video/mp4');
-
         $this->actingAs($admin)->post(
             route('back.settings.recorded-courses.store'),
             [
@@ -47,16 +44,51 @@ class RecordedCourseLearnerFlowTest extends TestCase
                 'unlock_delay_hours' => 1,
                 'allowed_weekdays' => [6],
                 'lessons' => [
-                    ['title_ar' => 'L1', 'title_en' => 'L1', 'video' => $f1],
-                    ['title_ar' => 'L2', 'title_en' => 'L2', 'video' => $f2],
+                    ['title_ar' => 'L1', 'title_en' => 'L1'],
+                    ['title_ar' => 'L2', 'title_en' => 'L2'],
                 ],
             ]
-        )->assertRedirect(route('back.settings.recorded-courses.index'));
+        )->assertRedirect(
+            route(
+                'back.settings.recorded-courses.edit',
+                RecordedCourse::query()->where('name_en', 'Course')->firstOrFail()
+            )
+        );
 
         $course = RecordedCourse::query()->where('name_en', 'Course')->firstOrFail();
         $lessons = $course->lessons()->orderBy('sort_order')->get();
 
-        return [$admin, $course, $lessons[0], $lessons[1]];
+        $f1 = UploadedFile::fake()->create('l1.mp4', 200, 'video/mp4');
+        $f2 = UploadedFile::fake()->create('l2.mp4', 200, 'video/mp4');
+
+        $this->actingAs($admin)->put(
+            route('back.settings.recorded-courses.update', $course->id),
+            [
+                'name_ar' => 'دورة',
+                'name_en' => 'Course',
+                'description' => 'D',
+                'unlock_delay_hours' => 1,
+                'allowed_weekdays' => [6],
+                'lessons' => [
+                    [
+                        'id' => $lessons[0]->id,
+                        'title_ar' => 'L1',
+                        'title_en' => 'L1',
+                        'video' => $f1,
+                    ],
+                    [
+                        'id' => $lessons[1]->id,
+                        'title_ar' => 'L2',
+                        'title_en' => 'L2',
+                        'video' => $f2,
+                    ],
+                ],
+            ]
+        )->assertRedirect(route('back.settings.recorded-courses.edit', $course));
+
+        $lessons = $course->fresh()->lessons()->orderBy('sort_order')->get();
+
+        return [$admin, $course->fresh(), $lessons[0], $lessons[1]];
     }
 
     /**
@@ -223,17 +255,18 @@ class RecordedCourseLearnerFlowTest extends TestCase
         Carbon::setTestNow();
     }
 
-    public function test_admin_can_enroll_trainee_via_settings(): void
+    public function test_admin_can_enroll_engineer_via_trainee_profile(): void
     {
         $admin = $this->makeAdminWithTeam();
         [, $course] = $this->createCourseTwoLessonsSaturdayOnly($admin);
         [, $trainee] = $this->createTraineeForTeam($admin);
+        $trainee->forceFill(['is_engineer' => true])->save();
 
         $this->actingAs($admin)
-            ->post(route('back.settings.recorded-courses.enrollments.store', $course->id), [
-                'trainee_id' => $trainee->id,
+            ->post(route('back.trainees.recorded-course-enrollments.store', $trainee->id), [
+                'recorded_course_id' => $course->id,
             ])
-            ->assertRedirect(route('back.settings.recorded-courses.edit', $course->id));
+            ->assertRedirect(route('back.trainees.show', $trainee));
 
         $this->assertDatabaseHas('recorded_course_enrollments', [
             'trainee_id' => $trainee->id,

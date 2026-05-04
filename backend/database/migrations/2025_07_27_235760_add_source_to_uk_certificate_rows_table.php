@@ -9,8 +9,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('uk_certificate_rows', function (Blueprint $table) {
-            $table->string('source')->nullable()->after('pdf_path');
-            $table->string('source_ref')->nullable()->after('source');
+            // $table->string('source')->nullable()->after('pdf_path');
+            // $table->string('source_ref')->nullable()->after('source');
         });
     }
 

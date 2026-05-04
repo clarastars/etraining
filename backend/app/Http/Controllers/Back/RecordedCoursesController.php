@@ -9,10 +9,13 @@ use App\Http\Requests\Back\StoreRecordedCourseRequest;
 use App\Http\Requests\Back\UpdateRecordedCourseRequest;
 use App\Models\Back\RecordedCourse;
 use App\Models\Back\RecordedCourseLesson;
+use App\Services\RecordedCourseLessonVideoChunkUploadService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+use InvalidArgumentException;
 
 class RecordedCoursesController extends Controller
 {
@@ -77,8 +80,8 @@ class RecordedCoursesController extends Controller
     {
         $validated = $request->validated();
 
-        DB::transaction(function () use ($request, $validated): void {
-            /** @var RecordedCourse $course */
+        /** @var RecordedCourse $course */
+        $course = DB::transaction(function () use ($request, $validated): RecordedCourse {
             $course = RecordedCourse::query()->create([
                 'name_ar' => $validated['name_ar'],
                 'name_en' => $validated['name_en'],
@@ -88,33 +91,53 @@ class RecordedCoursesController extends Controller
             ]);
 
             foreach (array_keys($validated['lessons']) as $index) {
-                $lesson = $course->lessons()->create([
+                $course->lessons()->create([
                     'sort_order' => (int) $index,
                     'title_ar' => $request->input("lessons.{$index}.title_ar"),
                     'title_en' => $request->input("lessons.{$index}.title_en") ?? '',
                 ]);
-                $file = $request->file("lessons.{$index}.video");
-                if ($file) {
-                    $lesson->attachVideo($file);
-                }
             }
+
+            return $course;
         });
 
-        return redirect()->route('back.settings.recorded-courses.index');
+        return redirect()
+            ->route('back.settings.recorded-courses.edit', $course)
+            ->with('success', __('words.recorded-course-created-add-videos'));
     }
 
     public function edit(RecordedCourse $recordedCourse): Response
     {
         abort_unless(auth()->user()->can('manage-recorded-courses'), 403);
 
-        $recordedCourse->load(['lessons', 'enrollments.trainee']);
+        $recordedCourse->load([
+            'lessons',
+            'enrollments.trainee',
+            'enrollments.lessonProgress',
+        ]);
 
-        $enrollments = $recordedCourse->enrollments->map(function ($e) {
+        $lessonsOrdered = $recordedCourse->lessons;
+
+        $enrollments = $recordedCourse->enrollments->map(function ($e) use ($lessonsOrdered) {
+            $byLessonId = $e->lessonProgress->keyBy('recorded_course_lesson_id');
+            $lessonProgress = $lessonsOrdered->map(function (RecordedCourseLesson $lesson) use ($byLessonId) {
+                $p = $byLessonId->get($lesson->id);
+
+                return [
+                    'lesson_id' => $lesson->id,
+                    'title_ar' => $lesson->title_ar,
+                    'title_en' => $lesson->title_en ?? '',
+                    'unlocked_at' => $p?->unlocked_at?->toIso8601String(),
+                    'completed_at' => $p?->completed_at?->toIso8601String(),
+                ];
+            })->values()->all();
+
             return [
                 'id' => $e->id,
                 'trainee_id' => $e->trainee_id,
                 'trainee_name' => $e->trainee?->name,
                 'enrolled_at' => $e->enrolled_at?->toIso8601String(),
+                'lesson_progress' => $lessonProgress,
             ];
         });
 
@@ -144,8 +167,11 @@ class RecordedCoursesController extends Controller
         ]);
     }
 
-    public function update(UpdateRecordedCourseRequest $request, RecordedCourse $recordedCourse): RedirectResponse
-    {
+    public function update(
+        UpdateRecordedCourseRequest $request,
+        RecordedCourse $recordedCourse,
+        RecordedCourseLessonVideoChunkUploadService $chunkUploads,
+    ): RedirectResponse {
         $validated = $request->validated();
 
         $recordedCourse->update([
@@ -159,7 +185,7 @@ class RecordedCoursesController extends Controller
         $lessonsInput = $request->input('lessons', []);
         $keepIds = collect($lessonsInput)->pluck('id')->filter()->values();
 
-        DB::transaction(function () use ($recordedCourse, $request, $lessonsInput, $keepIds): void {
+        DB::transaction(function () use ($recordedCourse, $request, $lessonsInput, $keepIds, $chunkUploads): void {
             $recordedCourse->lessons()
                 ->whereNotIn('id', $keepIds->all())
                 ->delete();
@@ -177,6 +203,18 @@ class RecordedCoursesController extends Controller
                     ]);
                     if ($request->hasFile("lessons.{$index}.video")) {
                         $lesson->attachVideo($request->file("lessons.{$index}.video"));
+                    } elseif (filled($request->input("lessons.{$index}.upload_token"))) {
+                        try {
+                            $payload = $chunkUploads->consumeReadyToken(
+                                (int) $request->user()->id,
+                                (string) $request->input("lessons.{$index}.upload_token")
+                            );
+                        } catch (InvalidArgumentException $e) {
+                            throw ValidationException::withMessages([
+                                "lessons.{$index}.upload_token" => [$e->getMessage()],
+                            ]);
+                        }
+                        $lesson->attachVideoFromAssembledFile($payload['path'], $payload['original_name']);
                     }
                 } else {
                     $lesson = $recordedCourse->lessons()->create([
@@ -186,12 +224,26 @@ class RecordedCoursesController extends Controller
                     ]);
                     if ($request->hasFile("lessons.{$index}.video")) {
                         $lesson->attachVideo($request->file("lessons.{$index}.video"));
+                    } elseif (filled($request->input("lessons.{$index}.upload_token"))) {
+                        try {
+                            $payload = $chunkUploads->consumeReadyToken(
+                                (int) $request->user()->id,
+                                (string) $request->input("lessons.{$index}.upload_token")
+                            );
+                        } catch (InvalidArgumentException $e) {
+                            throw ValidationException::withMessages([
+                                "lessons.{$index}.upload_token" => [$e->getMessage()],
+                            ]);
+                        }
+                        $lesson->attachVideoFromAssembledFile($payload['path'], $payload['original_name']);
                     }
                 }
             }
         });
 
-        return redirect()->route('back.settings.recorded-courses.index');
+        return redirect()
+            ->route('back.settings.recorded-courses.edit', $recordedCourse)
+            ->with('success', __('words.saved-successfully'));
     }
 
     public function destroy(RecordedCourse $recordedCourse): RedirectResponse

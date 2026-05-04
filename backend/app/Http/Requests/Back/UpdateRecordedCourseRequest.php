@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Back;
 
-use App\Models\Back\RecordedCourseLesson;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -46,6 +45,7 @@ class UpdateRecordedCourseRequest extends FormRequest
                 'mimetypes:video/mp4,video/webm,video/quicktime',
                 'max:'.$maxKb,
             ],
+            'lessons.*.upload_token' => ['nullable', 'uuid'],
         ];
     }
 
@@ -54,22 +54,13 @@ class UpdateRecordedCourseRequest extends FormRequest
         $validator->after(function (Validator $validator): void {
             $lessons = $this->input('lessons', []);
             foreach ($lessons as $index => $lesson) {
-                $hasId = ! empty($lesson['id']);
                 $hasFile = $this->hasFile("lessons.{$index}.video");
-                if (! $hasId && ! $hasFile) {
+                $hasToken = filled($this->input("lessons.{$index}.upload_token"));
+                if ($hasFile && $hasToken) {
                     $validator->errors()->add(
                         "lessons.{$index}.video",
-                        __('validation.required', ['attribute' => 'video'])
+                        __('words.recorded-course-video-upload-one-method')
                     );
-                }
-                if ($hasId) {
-                    $model = RecordedCourseLesson::query()->find($lesson['id']);
-                    if ($model && ! $model->getFirstMedia(RecordedCourseLesson::VIDEO_COLLECTION) && ! $hasFile) {
-                        $validator->errors()->add(
-                            "lessons.{$index}.video",
-                            __('validation.required', ['attribute' => 'video'])
-                        );
-                    }
                 }
             }
         });

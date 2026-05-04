@@ -23,7 +23,10 @@
         <jet-form-section @submitted="submitForm">
           <template #title>{{ $t("words.recorded-course-edit") }}</template>
           <template #description>
-            {{ $t("words.recorded-course-help-unlock") }}
+            <span>{{ $t("words.recorded-course-help-unlock") }}</span>
+            <span class="block mt-2 text-gray-600">{{
+              $t("words.recorded-course-edit-lesson-videos-hint")
+            }}</span>
           </template>
           <template #form>
             <div class="col-span-6 sm:col-span-4">
@@ -162,7 +165,7 @@
                     </p>
                     <jet-label
                       :for="'video_' + index"
-                      :value="$t('words.recorded-course-lesson-video')"
+                      :value="$t('words.recorded-course-lesson-video-optional')"
                     />
                     <input
                       :id="'video_' + index"
@@ -198,6 +201,15 @@
             </div>
           </template>
           <template #actions>
+            <p
+              v-if="form.processing && chunkUploadLessonIndex != null"
+              class="text-sm text-gray-600 mb-2 w-full"
+            >
+              {{ $t("words.recorded-course-uploading-large-videos") }}
+              ({{ $t("words.recorded-course-lessons-count") }}
+              {{ chunkUploadLessonIndex }}/{{ form.lessons.length }} ·
+              {{ chunkUploadPercent }}%)
+            </p>
             <jet-action-message :on="form.recentlySuccessful" class="mr-3">
               {{ $t("words.saved-successfully") }}
             </jet-action-message>
@@ -211,32 +223,62 @@
         </jet-form-section>
       </div>
 
-      <div class="mt-10 p-6 bg-white rounded shadow">
-        <h2 class="text-lg font-semibold text-gray-800 mb-4">
-          {{ $t("words.recorded-course-enrollments") }}
+      <div class="mt-10 p-6 bg-white rounded shadow overflow-x-auto">
+        <h2 class="text-lg font-semibold text-gray-800 mb-2">
+          {{ $t("words.recorded-course-enrollments-progress") }}
         </h2>
-        <ul v-if="enrollments.length" class="mb-6 list-disc rtl:mr-6 ltr:ml-6 text-sm text-gray-700">
-          <li v-for="row in enrollments" :key="row.id">
-            {{ row.trainee_name || row.trainee_id }} — {{ row.enrolled_at }}
-          </li>
-        </ul>
-        <p v-else class="mb-6 text-sm text-gray-500">{{ $t("words.nothing-is-here") }}</p>
-        <form @submit.prevent="submitEnrollment" class="flex flex-wrap items-end gap-4">
-          <div class="flex-1 min-w-[200px]">
-            <jet-label for="trainee_id" :value="$t('words.recorded-course-trainee-id')" />
-            <jet-input
-              id="trainee_id"
-              v-model="enrollmentForm.trainee_id"
-              type="text"
-              class="mt-1 block w-full"
-              autocomplete="off"
-            />
-            <jet-input-error :message="enrollmentForm.error('trainee_id')" class="mt-2" />
-          </div>
-          <jet-button type="submit" :class="{ 'opacity-25': enrollmentForm.processing }" :disabled="enrollmentForm.processing">
-            {{ $t("words.recorded-course-enroll-trainee") }}
-          </jet-button>
-        </form>
+        <p class="text-sm text-gray-600 mb-4">
+          {{ $t("words.recorded-course-enrollments-hint-from-trainee") }}
+        </p>
+        <template v-if="enrollments.length">
+          <table class="min-w-full text-sm border border-gray-200 rounded-lg overflow-hidden">
+            <thead class="bg-gray-50 text-left rtl:text-right">
+              <tr>
+                <th class="border-b border-gray-200 px-3 py-2 font-semibold text-gray-700">
+                  {{ $t("words.name") }}
+                </th>
+                <th class="border-b border-gray-200 px-3 py-2 font-semibold text-gray-700 whitespace-nowrap">
+                  {{ $t("words.recorded-course-enrolled-at") }}
+                </th>
+                <th
+                  v-for="lesson in lessons"
+                  :key="'h-' + lesson.id"
+                  class="border-b border-gray-200 px-2 py-2 font-semibold text-gray-700 text-center min-w-[7rem]"
+                >
+                  <span class="line-clamp-2">{{ lesson.title_en || lesson.title_ar }}</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="row in enrollments"
+                :key="row.id"
+                class="border-b border-gray-100 last:border-0"
+              >
+                <td class="px-3 py-2 text-gray-900">
+                  {{ row.trainee_name || row.trainee_id }}
+                </td>
+                <td class="px-3 py-2 text-gray-600 whitespace-nowrap text-xs">
+                  {{ row.enrolled_at }}
+                </td>
+                <td
+                  v-for="(lp, idx) in row.lesson_progress"
+                  :key="row.id + '-' + (lp.lesson_id || idx)"
+                  class="px-2 py-2 text-center text-xs border-l border-gray-100"
+                >
+                  <span v-if="lp.completed_at" class="text-green-700 font-medium">{{
+                    $t("words.recorded-course-progress-done")
+                  }}</span>
+                  <span v-else-if="lp.unlocked_at" class="text-indigo-700 font-medium">{{
+                    $t("words.recorded-course-progress-unlocked")
+                  }}</span>
+                  <span v-else class="text-gray-400">—</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </template>
+        <p v-else class="text-sm text-gray-500">{{ $t("words.nothing-is-here") }}</p>
       </div>
     </div>
   </app-layout>
@@ -252,6 +294,10 @@ import JetInput from "@/Jetstream/Input";
 import JetInputError from "@/Jetstream/InputError";
 import JetLabel from "@/Jetstream/Label";
 import BreadcrumbContainer from "@/Components/BreadcrumbContainer";
+import {
+  needsChunkedRecordedCourseVideoUpload,
+  uploadRecordedCourseLessonVideoInChunks,
+} from "@/helpers/recordedCourseChunkVideoUpload";
 
 export default {
   metaInfo: { title: "Edit recorded course" },
@@ -281,10 +327,9 @@ export default {
   },
   data() {
     return {
+      chunkUploadLessonIndex: null,
+      chunkUploadPercent: 0,
       weekdayValues: [0, 1, 2, 3, 4, 5, 6],
-      enrollmentForm: this.$inertia.form({
-        trainee_id: "",
-      }),
       form: this.$inertia.form({
         name_ar: this.recordedCourse.name_ar,
         name_en: this.recordedCourse.name_en,
@@ -303,17 +348,6 @@ export default {
     };
   },
   methods: {
-    submitEnrollment() {
-      this.enrollmentForm.post(
-        this.route("back.settings.recorded-courses.enrollments.store", this.recordedCourse.id),
-        {
-          preserveScroll: true,
-          onSuccess: () => {
-            this.enrollmentForm.reset();
-          },
-        }
-      );
-    },
     onVideoChange(e, index) {
       const file = e.target.files && e.target.files[0];
       this.$set(this.form.lessons[index], "video", file || null);
@@ -331,7 +365,7 @@ export default {
     removeLesson(index) {
       this.form.lessons.splice(index, 1);
     },
-    buildPlainPayload() {
+    courseMetaPayload() {
       return {
         name_ar: this.form.name_ar == null ? "" : String(this.form.name_ar),
         name_en: this.form.name_en == null ? "" : String(this.form.name_en),
@@ -341,27 +375,63 @@ export default {
         allowed_weekdays: Array.isArray(this.form.allowed_weekdays)
           ? this.form.allowed_weekdays.map((d) => Number(d))
           : [],
-        lessons: (this.form.lessons || []).map((lesson) => ({
-          id: lesson.id || null,
-          title_ar: lesson.title_ar == null ? "" : String(lesson.title_ar),
-          title_en: lesson.title_en == null ? "" : String(lesson.title_en),
-          video: lesson.video instanceof File ? lesson.video : null,
-        })),
       };
     },
-    submitForm() {
+    async submitForm() {
+      this.form.processing = true;
+      this.form.clearErrors();
+      this.chunkUploadLessonIndex = null;
+      this.chunkUploadPercent = 0;
+
+      let lessonsPayload;
+      try {
+        lessonsPayload = [];
+        for (let i = 0; i < this.form.lessons.length; i++) {
+          const lesson = this.form.lessons[i];
+          let video = null;
+          let uploadToken = null;
+          if (lesson.video instanceof File) {
+            if (needsChunkedRecordedCourseVideoUpload(lesson.video)) {
+              this.chunkUploadLessonIndex = i + 1;
+              uploadToken = await uploadRecordedCourseLessonVideoInChunks(
+                lesson.video,
+                (fraction) => {
+                  this.chunkUploadPercent = Math.round(fraction * 100);
+                }
+              );
+            } else {
+              video = lesson.video;
+            }
+          }
+          lessonsPayload.push({
+            id: lesson.id || null,
+            title_ar: lesson.title_ar == null ? "" : String(lesson.title_ar),
+            title_en: lesson.title_en == null ? "" : String(lesson.title_en),
+            video,
+            upload_token: uploadToken,
+          });
+        }
+      } catch (e) {
+        this.form.processing = false;
+        this.chunkUploadLessonIndex = null;
+        this.chunkUploadPercent = 0;
+        const msg =
+          (e.response && e.response.data && e.response.data.message) ||
+          e.message ||
+          this.$t("words.upload-failed");
+        window.alert(msg);
+        return;
+      }
+
       Inertia.put(
         this.route(
           "back.settings.recorded-courses.update",
           this.recordedCourse.id
         ),
-        this.buildPlainPayload(),
+        { ...this.courseMetaPayload(), lessons: lessonsPayload },
         {
           forceFormData: true,
           preserveScroll: true,
-          onStart: () => {
-            this.form.processing = true;
-          },
           onError: (errors) => {
             this.form.processing = false;
             this.form.errors = errors;
@@ -373,6 +443,8 @@ export default {
           },
           onFinish: () => {
             this.form.processing = false;
+            this.chunkUploadLessonIndex = null;
+            this.chunkUploadPercent = 0;
           },
         }
       );

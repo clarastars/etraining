@@ -689,6 +689,10 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function() {
         Route::delete('/settings/recorded-courses/{recorded_course}', [\App\Http\Controllers\Back\RecordedCoursesController::class, 'destroy'])->name('settings.recorded-courses.destroy');
         Route::post('/settings/recorded-courses/{recorded_course}/enrollments', [\App\Http\Controllers\Back\RecordedCourseEnrollmentsController::class, 'store'])->name('settings.recorded-courses.enrollments.store');
 
+        Route::post('/settings/recorded-courses/lesson-videos/chunk-uploads', [\App\Http\Controllers\Back\RecordedCourseLessonVideoChunkUploadController::class, 'start'])->name('settings.recorded-courses.lesson-videos.chunk-uploads.start');
+        Route::post('/settings/recorded-courses/lesson-videos/chunk-uploads/{upload}', [\App\Http\Controllers\Back\RecordedCourseLessonVideoChunkUploadController::class, 'chunk'])->name('settings.recorded-courses.lesson-videos.chunk-uploads.chunk');
+        Route::post('/settings/recorded-courses/lesson-videos/chunk-uploads/{upload}/complete', [\App\Http\Controllers\Back\RecordedCourseLessonVideoChunkUploadController::class, 'complete'])->name('settings.recorded-courses.lesson-videos.chunk-uploads.complete');
+
         Route::get('/settings/global-messages', [\App\Http\Controllers\Back\GlobalMessagesController::class, 'index'])->name('settings.global-messages.index');
         Route::get('/settings/global-messages/create', [\App\Http\Controllers\Back\GlobalMessagesController::class, 'create'])->name('settings.global-messages.create');
         Route::post('/settings/global-messages', [\App\Http\Controllers\Back\GlobalMessagesController::class, 'store'])->name('settings.global-messages.store');
@@ -933,6 +937,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function() {
         Route::post('trainees/blocked/show/{trainee_id}', [\App\Http\Controllers\Back\TraineesController::class, 'unblock'])->name('trainees.unblock');
         Route::get('trainees/archived', [\App\Http\Controllers\Back\TraineesController::class, 'indexArchived'])->name('trainees.index.archived');
         Route::get('trainees/engineers', [\App\Http\Controllers\Back\TraineesController::class, 'indexEngineers'])->name('trainees.engineers.index');
+        Route::post('trainees/{trainee}/recorded-course-enrollments', [\App\Http\Controllers\Back\TraineeRecordedCourseEnrollmentsController::class, 'store'])->name('trainees.recorded-course-enrollments.store');
         Route::resource('trainees', \App\Http\Controllers\Back\TraineesController::class);
         Route::resource('trainees.invoices', \App\Http\Controllers\Back\TraineeInvoicesController::class)->only(['create', 'store']);
         Route::post('trainees/{trainee_id}/refresh-invoices', [\App\Http\Controllers\Back\TraineesController::class, 'refreshInvoices'])->name('trainees.refresh-invoices');

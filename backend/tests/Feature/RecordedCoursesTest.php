@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\Back\RecordedCourse;
 use App\Models\User;
 use App\Services\RolesService;
-use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 
 class RecordedCoursesTest extends TestCase
@@ -33,11 +33,9 @@ class RecordedCoursesTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_admin_can_create_recorded_course_with_lesson_video(): void
+    public function test_admin_can_create_recorded_course_without_lesson_videos(): void
     {
         $admin = $this->makeAdminWithTeam();
-
-        $file = UploadedFile::fake()->create('lesson.mp4', 1024, 'video/mp4');
 
         $this->actingAs($admin)->post(
             route('back.settings.recorded-courses.store'),
@@ -51,11 +49,15 @@ class RecordedCoursesTest extends TestCase
                     [
                         'title_ar' => 'درس 1',
                         'title_en' => 'Lesson 1',
-                        'video' => $file,
                     ],
                 ],
             ]
-        )->assertRedirect(route('back.settings.recorded-courses.index'));
+        )->assertRedirect(
+            route(
+                'back.settings.recorded-courses.edit',
+                RecordedCourse::query()->where('name_en', 'Recorded course')->firstOrFail()
+            )
+        );
 
         $this->assertDatabaseHas('recorded_courses', [
             'name_en' => 'Recorded course',
