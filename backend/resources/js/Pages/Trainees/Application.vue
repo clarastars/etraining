@@ -46,20 +46,20 @@
                             {{ $t('words.identity-card-photocopy') }}
                         </label>
 
-                        <label class="mt-5 mx-auto w-64 flex flex-col items-center px-4 py-6 bg-white text-blue rounded-lg shadow-lg border border-blue cursor-pointer hover:bg-blue hover:text-red-500">
-                            <svg class="w-8 h-8" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                        <label class="relative mt-5 mx-auto w-full max-w-xs flex flex-col items-center px-4 py-6 bg-white text-blue rounded-lg shadow-lg border border-blue cursor-pointer hover:bg-blue hover:text-red-500 overflow-hidden">
+                            <svg class="w-8 h-8 pointer-events-none" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
                                 <path d="M16.88 9.1A4 4 0 0 1 16 17H5a5 5 0 0 1-1-9.9V7a3 3 0 0 1 4.52-2.59A4.98 4.98 0 0 1 17 8c0 .38-.04.74-.12 1.1zM11 11h3l-4-4-4 4h3v3h2v-3z" />
                             </svg>
 
-                            <span v-if="identity_card_copy" class="mt-2 text-base leading-normal text-center">
+                            <span v-if="identity_card_copy" class="mt-2 text-base leading-normal text-center pointer-events-none">
                                 {{ $t('words.file-selected') }} ✅<br/>
                                 <div class="text-sm text-gray-500 mt-5" v-if="identity_card_copy.name">{{ identity_card_copy.name }}</div>
                             </span>
-                            <span v-else class="mt-2 text-base leading-normal">{{ $t('words.select-file') }}</span>
+                            <span v-else class="mt-2 text-base leading-normal pointer-events-none">{{ $t('words.select-file') }}</span>
 
-                            <input type='file'
-                                   class="hidden"
-                                   :ref="$t('words.identity-card-photocopy')"
+                            <input type="file"
+                                   class="absolute inset-0 block h-full w-full cursor-pointer opacity-0 z-10"
+                                   style="font-size: 1rem;"
                                    @change="uploadFile($event, 'identity_card_copy')"
                                    :name="$t('words.identity-card-photocopy')"
                                    required />
@@ -71,20 +71,20 @@
                             {{ $t('words.qualification-photocopy') }}
                         </label>
 
-                        <label class="mt-5 mx-auto w-64 flex flex-col items-center px-4 py-6 bg-white text-blue rounded-lg shadow-lg border border-blue cursor-pointer hover:bg-blue hover:text-red-500">
-                            <svg class="w-8 h-8" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                        <label class="relative mt-5 mx-auto w-full max-w-xs flex flex-col items-center px-4 py-6 bg-white text-blue rounded-lg shadow-lg border border-blue cursor-pointer hover:bg-blue hover:text-red-500 overflow-hidden">
+                            <svg class="w-8 h-8 pointer-events-none" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
                                 <path d="M16.88 9.1A4 4 0 0 1 16 17H5a5 5 0 0 1-1-9.9V7a3 3 0 0 1 4.52-2.59A4.98 4.98 0 0 1 17 8c0 .38-.04.74-.12 1.1zM11 11h3l-4-4-4 4h3v3h2v-3z" />
                             </svg>
 
-                            <span v-if="qualification_copy" class="mt-2 text-base leading-normal text-center">
+                            <span v-if="qualification_copy" class="mt-2 text-base leading-normal text-center pointer-events-none">
                                 {{ $t('words.file-selected') }} ✅<br/>
                                 <div class="text-sm text-gray-500 mt-5" v-if="qualification_copy.name">{{ qualification_copy.name }}</div   >
                             </span>
-                            <span v-else class="mt-2 text-base leading-normal">{{ $t('words.select-file') }}</span>
+                            <span v-else class="mt-2 text-base leading-normal pointer-events-none">{{ $t('words.select-file') }}</span>
 
-                            <input type='file'
-                                   class="hidden"
-                                   :ref="$t('words.qualification-photocopy')"
+                            <input type="file"
+                                   class="absolute inset-0 block h-full w-full cursor-pointer opacity-0 z-10"
+                                   style="font-size: 1rem;"
                                    @change="uploadFile($event, ('qualification_copy'))"
                                    :name="$t('words.qualification-photocopy')"
                                    required />
@@ -96,20 +96,20 @@
                             {{ $t('words.bank-account-photocopy') }}
                         </label>
 
-                        <label class="mt-5 mx-auto w-64 flex flex-col items-center px-4 py-6 bg-white text-blue rounded-lg shadow-lg border border-blue cursor-pointer hover:bg-blue hover:text-red-500">
-                            <svg class="w-8 h-8" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                        <label class="relative mt-5 mx-auto w-full max-w-xs flex flex-col items-center px-4 py-6 bg-white text-blue rounded-lg shadow-lg border border-blue cursor-pointer hover:bg-blue hover:text-red-500 overflow-hidden">
+                            <svg class="w-8 h-8 pointer-events-none" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
                                 <path d="M16.88 9.1A4 4 0 0 1 16 17H5a5 5 0 0 1-1-9.9V7a3 3 0 0 1 4.52-2.59A4.98 4.98 0 0 1 17 8c0 .38-.04.74-.12 1.1zM11 11h3l-4-4-4 4h3v3h2v-3z" />
                             </svg>
 
-                            <span v-if="bank_account_copy" class="mt-2 text-base leading-normal text-center">
+                            <span v-if="bank_account_copy" class="mt-2 text-base leading-normal text-center pointer-events-none">
                                 {{ $t('words.file-selected') }} ✅<br/>
                                 <div class="text-sm text-gray-500 mt-5" v-if="bank_account_copy.name">{{ bank_account_copy.name }}</div   >
                             </span>
-                            <span v-else class="mt-2 text-base leading-normal">{{ $t('words.select-file') }}</span>
+                            <span v-else class="mt-2 text-base leading-normal pointer-events-none">{{ $t('words.select-file') }}</span>
 
-                            <input type='file'
-                                   class="hidden"
-                                   :ref="$t('words.bank-account-photocopy')"
+                            <input type="file"
+                                   class="absolute inset-0 block h-full w-full cursor-pointer opacity-0 z-10"
+                                   style="font-size: 1rem;"
                                    @change="uploadFile($event, ('bank_account_copy'))"
                                    :name="$t('words.bank-account-photocopy')"
                                    required />
@@ -121,20 +121,20 @@
                             {{ $t('words.national-address-copy') }}
                         </label>
 
-                        <label class="mt-5 mx-auto w-64 flex flex-col items-center px-4 py-6 bg-white text-blue rounded-lg shadow-lg border border-blue cursor-pointer hover:bg-blue hover:text-red-500">
-                            <svg class="w-8 h-8" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                        <label class="relative mt-5 mx-auto w-full max-w-xs flex flex-col items-center px-4 py-6 bg-white text-blue rounded-lg shadow-lg border border-blue cursor-pointer hover:bg-blue hover:text-red-500 overflow-hidden">
+                            <svg class="w-8 h-8 pointer-events-none" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
                                 <path d="M16.88 9.1A4 4 0 0 1 16 17H5a5 5 0 0 1-1-9.9V7a3 3 0 0 1 4.52-2.59A4.98 4.98 0 0 1 17 8c0 .38-.04.74-.12 1.1zM11 11h3l-4-4-4 4h3v3h2v-3z" />
                             </svg>
 
-                            <span v-if="national_address_copy" class="mt-2 text-base leading-normal text-center">
+                            <span v-if="national_address_copy" class="mt-2 text-base leading-normal text-center pointer-events-none">
                                 {{ $t('words.file-selected') }} ✅<br/>
                                 <div class="text-sm text-gray-500 mt-5" v-if="national_address_copy.name">{{ national_address_copy.name }}</div   >
                             </span>
-                            <span v-else class="mt-2 text-base leading-normal">{{ $t('words.select-file') }}</span>
+                            <span v-else class="mt-2 text-base leading-normal pointer-events-none">{{ $t('words.select-file') }}</span>
 
-                            <input type='file'
-                                   class="hidden"
-                                   :ref="$t('words.national-address-copy')"
+                            <input type="file"
+                                   class="absolute inset-0 block h-full w-full cursor-pointer opacity-0 z-10"
+                                   style="font-size: 1rem;"
                                    @change="uploadFile($event, ('national_address_copy'))"
                                    :name="$t('words.national-address-copy')"
                                    required />
@@ -146,20 +146,20 @@
                             {{ $t('words.cv') }}
                         </label>
 
-                        <label class="mt-5 mx-auto w-64 flex flex-col items-center px-4 py-6 bg-white text-blue rounded-lg shadow-lg border border-blue cursor-pointer hover:bg-blue hover:text-red-500">
-                            <svg class="w-8 h-8" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                        <label class="relative mt-5 mx-auto w-full max-w-xs flex flex-col items-center px-4 py-6 bg-white text-blue rounded-lg shadow-lg border border-blue cursor-pointer hover:bg-blue hover:text-red-500 overflow-hidden">
+                            <svg class="w-8 h-8 pointer-events-none" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
                                 <path d="M16.88 9.1A4 4 0 0 1 16 17H5a5 5 0 0 1-1-9.9V7a3 3 0 0 1 4.52-2.59A4.98 4.98 0 0 1 17 8c0 .38-.04.74-.12 1.1zM11 11h3l-4-4-4 4h3v3h2v-3z" />
                             </svg>
 
-                            <span v-if="cv" class="mt-2 text-base leading-normal text-center">
+                            <span v-if="cv" class="mt-2 text-base leading-normal text-center pointer-events-none">
                                 {{ $t('words.file-selected') }} ✅<br/>
                                 <div class="text-sm text-gray-500 mt-5" v-if="cv.name">{{ cv.name }}</div   >
                             </span>
-                            <span v-else class="mt-2 text-base leading-normal">{{ $t('words.select-file') }}</span>
+                            <span v-else class="mt-2 text-base leading-normal pointer-events-none">{{ $t('words.select-file') }}</span>
 
-                            <input type='file'
-                                   class="hidden"
-                                   :ref="$t('words.cv')"
+                            <input type="file"
+                                   class="absolute inset-0 block h-full w-full cursor-pointer opacity-0 z-10"
+                                   style="font-size: 1rem;"
                                    @change="uploadFile($event, ('cv'))"
                                    :name="$t('words.cv')"
                                    required />

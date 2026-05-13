@@ -242,7 +242,7 @@
         </div>
 
         <div
-          class="col-span-6 items-center justify-end bg-gray-50 text-right flex gap-6"
+          class="col-span-6 min-w-0 items-center justify-end bg-gray-50 text-right flex flex-wrap gap-2 sm:gap-3 md:gap-6"
           v-if="!is_limited_view"
         >
           <inertia-link

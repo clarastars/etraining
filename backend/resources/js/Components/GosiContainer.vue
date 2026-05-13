@@ -1,10 +1,10 @@
 <template>
     <div class="border-2 border-green-600 rounded w-full p-3">
-        <div class="flex">
-            <div class="flex">
+        <div class="flex flex-wrap items-start gap-2 md:flex-nowrap md:items-center md:gap-0">
+            <div class="flex flex-shrink-0">
                 <img src="/img/gosi.png" alt="gosi" class="p-3" style="max-width: 130px">
             </div>
-            <div class="w-full">
+            <div class="w-full min-w-0 flex-[1_1_200px]">
                 <div v-if="!data" class="flex justify-center align-middle">
                     <btn-loading-indicator v-if="$wait.is('LOADING_GOSI')" />
                     <p class="text-xs" v-else>الرجاء الضغط على 'تحديث' لطلب البيانات</p>
@@ -50,10 +50,10 @@
                     </table>
                 </template>
             </div>
-            <button class="btn-primary self-center mx-2 mt-2" @click="fetch(false)">
+            <button class="btn-primary self-center mx-2 mt-2 flex-shrink-0" @click="fetch(false)">
                 {{ $t('words.refresh') }}
             </button>
-            <button class="btn-secondary self-center mx-2 mt-2" @click="fetchFresh">
+            <button class="btn-secondary self-center mx-2 mt-2 flex-shrink-0 whitespace-normal text-center" @click="fetchFresh">
                 طلب بيانات جديدة من مصدر
             </button>
         </div>
