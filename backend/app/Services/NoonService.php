@@ -28,6 +28,11 @@ class NoonService implements PaymentServiceInterface
 
         $webhookUrl = ($centerId == 5676 ? 'https://prod.jasarah-ksa.com/noon' : 'https://app.jisr-ksa.com/noon');
 
+        $traineeDisplayName = $this->sanitizeContactNameForNoon((string) ($invoice->trainee->name ?? ''));
+        if ($traineeDisplayName === '') {
+            $traineeDisplayName = 'Trainee';
+        }
+
         $url = NoonPaymentService::getInstance()->initiate(
             $centerId,
             [
@@ -35,14 +40,14 @@ class NoonService implements PaymentServiceInterface
                 'reference' => $invoice->id,
                 'amount' => $invoice->grand_total,
                 'currency' => 'SAR',
-                'name' => Str::replace('  ', ' ', trim($invoice->trainee->name)),
+                'name' => $traineeDisplayName,
                 'description' => 'Training fees for period - '.$invoice->from_date.' - '.$invoice->to_date,
                 // 'ipAddress' => request()->ip(),
             ],
             'billing' => [
                 'contact' => [
-                    'firstName' => Str::before($invoice->trainee->name, ' '),
-                    'lastName' => Str::afterLast($invoice->trainee->name, ' '),
+                    'firstName' => Str::before($traineeDisplayName, ' '),
+                    'lastName' => Str::afterLast($traineeDisplayName, ' '),
                     'phone' => $invoice->trainee->clean_phone,
                     //'email' => $invoice->trainee->email,
                 ],
@@ -64,6 +69,22 @@ class NoonService implements PaymentServiceInterface
         }
 
         throw new RuntimeException('Noon payment fatal error: '.$url->resultCode.' - '.$url->message);
+    }
+
+    /**
+     * Remove Unicode format / bidi marks (e.g. U+200F RLM) and normalize whitespace for Noon payloads.
+     */
+    private function sanitizeContactNameForNoon(string $name): string
+    {
+        $stripped = preg_replace('/\p{Cf}/u', '', $name);
+
+        if ($stripped === null) {
+            return '';
+        }
+
+        $collapsed = preg_replace('/\s+/u', ' ', trim($stripped));
+
+        return $collapsed === null ? '' : $collapsed;
     }
 
     /**
