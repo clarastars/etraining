@@ -856,6 +856,18 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function() {
         Route::get('uk-certificates/{importId}/delivery-report', [\App\Http\Controllers\Back\UkCertificatesController::class, 'downloadDeliveryReport'])->name('uk-certificates.delivery-report');
         Route::delete('uk-certificates/{importId}', [\App\Http\Controllers\Back\UkCertificatesController::class, 'delete'])->name('uk-certificates.delete');
 
+        // Jasarah Center Certificates
+        Route::get('jasarah-center-certificates', [\App\Http\Controllers\Back\JasarahCenterCertificatesController::class, 'index'])->name('jasarah-center-certificates.index');
+        Route::get('jasarah-center-certificates/create', [\App\Http\Controllers\Back\JasarahCenterCertificatesController::class, 'create'])->name('jasarah-center-certificates.create');
+        Route::post('jasarah-center-certificates/upload-csv', [\App\Http\Controllers\Back\JasarahCenterCertificatesController::class, 'uploadCsv'])->name('jasarah-center-certificates.upload-csv');
+        Route::post('jasarah-center-certificates/send-emails', [\App\Http\Controllers\Back\JasarahCenterCertificatesController::class, 'sendEmails'])->name('jasarah-center-certificates.send-emails');
+        Route::get('jasarah-center-certificates/{importId}', [\App\Http\Controllers\Back\JasarahCenterCertificatesController::class, 'showProcessing'])->name('jasarah-center-certificates.processing');
+        Route::get('jasarah-center-certificates/{importId}/status', [\App\Http\Controllers\Back\JasarahCenterCertificatesController::class, 'getProcessingStatus'])->name('jasarah-center-certificates.status');
+        Route::post('jasarah-center-certificates/finalize', [\App\Http\Controllers\Back\JasarahCenterCertificatesController::class, 'finalizeImport'])->name('jasarah-center-certificates.finalize');
+        Route::get('jasarah-center-certificates/{row_id}/download', [\App\Http\Controllers\Back\JasarahCenterCertificatesController::class, 'downloadCertificate'])->name('jasarah-center-certificates.download');
+        Route::get('jasarah-center-certificates/{importId}/delivery-report', [\App\Http\Controllers\Back\JasarahCenterCertificatesController::class, 'downloadDeliveryReport'])->name('jasarah-center-certificates.delivery-report');
+        Route::delete('jasarah-center-certificates/{importId}', [\App\Http\Controllers\Back\JasarahCenterCertificatesController::class, 'delete'])->name('jasarah-center-certificates.delete');
+
         // Trainees
         Route::get('trainees/{id}/download-all-files', [\App\Http\Controllers\Back\TraineesController::class, 'downloadAllFiles'])->name('trainees.download-all-files');
         Route::get('trainees/fixed-training-costs', [\App\Http\Controllers\Back\TraineesController::class, 'indexFixedTrainingCosts'])->name('trainees.fixed-training-costs.index');

@@ -7,6 +7,7 @@ use App\Mail\CompanyAttendanceFailureMail;
 use App\Models\Back\Company;
 use App\Models\Back\CompanyAttendanceReport;
 use App\Models\Back\CompanyMail;
+use App\Models\Back\JasarahCenterCertificateRow;
 use App\Models\Back\UkCertificateRow;
 use App\Services\CompaniesService;
 use Illuminate\Http\Request;
@@ -162,8 +163,53 @@ class MailController extends Controller
             }
             
             return response()->json(['success' => true, 'uk_certificate_row_id' => $rowId]);
-        } else {
-            Log::info('UK Certificate tracking: No uk_certificate_row_id found in user-variables', [
+        }
+
+        if (array_key_exists('jasarah_center_certificate_row_id', $eventData['user-variables'])) {
+            $rowId = $eventData['user-variables']['jasarah_center_certificate_row_id'];
+            $row = JasarahCenterCertificateRow::find($rowId);
+
+            if ($row) {
+                $traineeEmail = $row->trainee->email ?? null;
+                $currentRecipient = $eventData['recipient'];
+
+                if ($traineeEmail && $currentRecipient === $traineeEmail) {
+                    $messageId = Arr::get($eventData, 'message.headers.message-id')
+                        ?? Arr::get($eventData, 'message.headers.Message-Id')
+                        ?? Arr::get($eventData, 'Message-Id');
+
+                    if ($eventData['event'] === 'delivered') {
+                        $row->update([
+                            'delivery_status' => 'delivered',
+                            'delivered_at' => now(),
+                            'mailgun_message_id' => $row->mailgun_message_id ?: $messageId,
+                            'sent_at' => $row->sent_at ?: now(),
+                            'status' => 'sent',
+                        ]);
+                    } elseif (in_array($eventData['event'], ['failed', 'bounced', 'complained'], true)) {
+                        $reason = match ($eventData['event']) {
+                            'bounced' => 'Email bounced: ' . (Arr::get($eventData, 'delivery-status.message', 'Unknown bounce reason')),
+                            'complained' => 'Email marked as spam/complaint',
+                            default => Arr::get($eventData, 'delivery-status.message', 'Unknown delivery failure'),
+                        };
+
+                        $row->update([
+                            'delivery_status' => 'failed',
+                            'failed_at' => now(),
+                            'delivery_failure_reason' => $reason,
+                            'mailgun_message_id' => $row->mailgun_message_id ?: $messageId,
+                            'status' => 'failed',
+                        ]);
+                    }
+                }
+            }
+
+            return response()->json(['success' => true, 'jasarah_center_certificate_row_id' => $rowId]);
+        }
+
+        if (!array_key_exists('uk_certificate_row_id', $eventData['user-variables'] ?? [])
+            && !array_key_exists('jasarah_center_certificate_row_id', $eventData['user-variables'] ?? [])) {
+            Log::info('Certificate tracking: No certificate row id found in user-variables', [
                 'user_variables' => $eventData['user-variables'] ?? 'not_found',
                 'event' => $eventData['event'],
                 'timestamp' => now()->toISOString(),
