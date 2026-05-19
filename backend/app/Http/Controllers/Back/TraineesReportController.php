@@ -70,23 +70,22 @@ class TraineesReportController extends Controller
             'deleted_mark' => 'nullable|string|max:255',
         ]);
 
-        // Create job tracker
-        $tracker = JobTracker::create([
-            'user_id' => auth()->id(),
-            'team_id' => auth()->user()->current_team_id,
-            'queued_at' => now(),
-            'metadata' => [
-                'age_under' => $request->age_under,
-                'has_invoices' => $request->has_invoices,
-                'assigned_to_company' => $request->assigned_to_company,
-                'status' => $request->status,
-                'phone_is_owned' => $request->phone_is_owned,
-                'educational_level_id' => $request->educational_level_id,
-                'deleted_mark' => $request->deleted_mark,
-            ],
-        ]);
+        $tracker = new JobTracker();
+        $tracker->user_id = auth()->id();
+        $tracker->metadata = [
+            'age_under' => $request->age_under,
+            'has_invoices' => $request->has_invoices,
+            'assigned_to_company' => $request->assigned_to_company,
+            'status' => $request->status,
+            'phone_is_owned' => $request->phone_is_owned,
+            'educational_level_id' => $request->educational_level_id,
+            'deleted_mark' => $request->deleted_mark,
+        ];
+        $tracker->queued_at = now();
+        $tracker->save();
 
-        // Dispatch job
+        $tracker = $tracker->refresh();
+
         TraineesReportJob::dispatch($tracker);
 
         return response()->json($tracker);

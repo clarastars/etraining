@@ -52,11 +52,11 @@ class TraineesReportJob implements ShouldQueue
         $maxExecutionTime = 7000; // 7000 seconds (just under 2 hours)
 
         try {
-            // Get filters from metadata
-            $filters = $this->tracker->metadata;
-            
-            // Build query - don't load relationships for Excel export to save memory
-            $query = Trainee::withTrashed(); // Include deleted trainees
+            $filters = $this->tracker->metadata ?? [];
+
+            $query = !empty($filters['deleted_mark'])
+                ? Trainee::onlyTrashed()
+                : Trainee::withTrashed();
 
             // Apply filters
             if (!empty($filters['age_under'])) {
@@ -157,6 +157,7 @@ class TraineesReportJob implements ShouldQueue
             'عدد الأطفال',
             'اسم الشركة',
             'تاريخ الحذف',
+            'ملاحظة الإيقاف',
             'تاريخ الإيقاف',
             'تاريخ الإنشاء',
             'الحالة',
@@ -179,7 +180,7 @@ class TraineesReportJob implements ShouldQueue
                 'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
             ]
         ];
-        $sheet->getStyle('A1:N1')->applyFromArray($headerStyle);
+        $sheet->getStyle('A1:O1')->applyFromArray($headerStyle);
 
         // Set RTL direction for the entire sheet
         $sheet->setRightToLeft(true);
@@ -225,6 +226,7 @@ class TraineesReportJob implements ShouldQueue
                         $trainee->children_count,
                         optional($trainee->company)->name_ar ?? '',
                         $trainee->deleted_at,
+                        $trainee->deleted_remark ?? '',
                         $trainee->suspended_at,
                         $trainee->created_at,
                         $statusText,
@@ -233,7 +235,7 @@ class TraineesReportJob implements ShouldQueue
                     $sheet->fromArray($data, null, 'A' . $row);
                     
                     // Apply RTL alignment to data rows
-                    $sheet->getStyle('A' . $row . ':N' . $row)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
+                    $sheet->getStyle('A' . $row . ':O' . $row)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
                     
                     $row++;
                     $processed++;
@@ -260,8 +262,7 @@ class TraineesReportJob implements ShouldQueue
             }
         });
 
-        // Auto-size columns for the 14 columns (A to N)
-        foreach (range('A', 'N') as $column) {
+        foreach (range('A', 'O') as $column) {
             $sheet->getColumnDimension($column)->setAutoSize(true);
         }
 
