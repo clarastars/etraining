@@ -22,7 +22,7 @@
         }
 
         body {
-            font-family: DejaVu Sans, sans-serif;
+            font-family: Arial, DejaVu Sans, sans-serif;
             font-size: 23px;
             color: #1a1a1a;
         }
