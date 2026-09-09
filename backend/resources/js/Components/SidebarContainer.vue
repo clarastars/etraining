@@ -73,7 +73,7 @@
 
         <sidebar-link
             v-can="'manage-recorded-courses'"
-            :link-value="route('back.training-disclosure.index')"
+            link-value="/back/training-disclosure"
             :active="isTrainingDisclosureActive"
         >
             <template #icon>
@@ -159,7 +159,7 @@
         },
         computed: {
             isTrainingDisclosureActive() {
-                const name = this.$page.currentRouteName || '';
+                const name = (this.$page && this.$page.currentRouteName) || '';
                 return name === 'back.training-disclosure.index'
                     || name.indexOf('back.settings.recorded-courses') === 0;
             },
