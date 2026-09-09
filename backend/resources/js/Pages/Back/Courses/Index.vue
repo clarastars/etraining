@@ -14,9 +14,9 @@
                     <inertia-link
                         v-can="'manage-recorded-courses'"
                         class="btn-gray"
-                        :href="route('back.settings.recorded-courses.index')"
-                    >
-                        <span>{{ $t('words.manage-pre-recorded-courses') }}</span>
+                        :href="route('back.training-disclosure.index')"
+                      >
+                        <span>{{ $t('words.training-disclosure') }}</span>
                     </inertia-link>
 
                     <inertia-link class="btn-gray ml-2" :href="route('back.courses.create')">

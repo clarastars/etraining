@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Back;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Back\StoreTraineeRecordedCourseEnrollmentRequest;
+use App\Jobs\SendRecordedCourseAccessLinkJob;
 use App\Models\Back\RecordedCourse;
 use App\Models\Back\RecordedCourseEnrollment;
 use App\Models\Back\Trainee;
@@ -42,12 +43,14 @@ class TraineeRecordedCourseEnrollmentsController extends Controller
                 ->with('warning', __('words.recorded-course-enrollment-already-exists'));
         }
 
-        RecordedCourseEnrollment::query()->create([
+        $enrollment = RecordedCourseEnrollment::query()->create([
             'team_id' => $trainee->team_id,
             'trainee_id' => $trainee->id,
             'recorded_course_id' => $course->id,
             'enrolled_at' => now(),
         ]);
+
+        SendRecordedCourseAccessLinkJob::dispatch($enrollment->id);
 
         return redirect()
             ->route('back.trainees.show', $trainee)

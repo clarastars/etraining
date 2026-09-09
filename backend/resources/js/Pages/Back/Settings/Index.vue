@@ -73,6 +73,11 @@
                     {{ $t('words.whatsapp-bots') }}
                 </inertia-link>
 
+                <inertia-link v-can="'manage-recorded-courses'" :href="route('back.training-disclosure.index')"
+                              class="col-span-1 bg-white shadow-lg rounded-lg p-5 transition-all duration-500 ease-in-out hover:bg-gray-200 text-center">
+                    {{ $t('words.training-disclosure') }}
+                </inertia-link>
+
                 <inertia-link :href="route('back.settings.maqsam-system.index')"
                               class="col-span-1 bg-white shadow-lg rounded-lg p-5 transition-all duration-500 ease-in-out hover:bg-gray-200 text-center">
                     {{ $t('words.maqsam-system') }}

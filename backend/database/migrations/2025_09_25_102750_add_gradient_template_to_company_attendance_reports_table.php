@@ -1,9 +1,8 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class AddGradientTemplateToCompanyAttendanceReportsTable extends Migration
 {
@@ -14,7 +13,15 @@ class AddGradientTemplateToCompanyAttendanceReportsTable extends Migration
      */
     public function up()
     {
-        // استخدام DB::statement لتعديل ENUM
+        if (! Schema::hasTable('company_attendance_reports')) {
+            return;
+        }
+
+        // MySQL-only ENUM alteration; SQLite stores this as a plain string.
+        if (DB::getDriverName() !== 'mysql') {
+            return;
+        }
+
         DB::statement("ALTER TABLE company_attendance_reports MODIFY COLUMN template_type ENUM('default', 'simple', 'modern', 'gradient') DEFAULT 'default'");
     }
 
@@ -25,7 +32,14 @@ class AddGradientTemplateToCompanyAttendanceReportsTable extends Migration
      */
     public function down()
     {
-        // إرجاع الـ ENUM إلى الحالة السابقة
+        if (! Schema::hasTable('company_attendance_reports')) {
+            return;
+        }
+
+        if (DB::getDriverName() !== 'mysql') {
+            return;
+        }
+
         DB::statement("ALTER TABLE company_attendance_reports MODIFY COLUMN template_type ENUM('default', 'simple', 'modern') DEFAULT 'default'");
     }
 }

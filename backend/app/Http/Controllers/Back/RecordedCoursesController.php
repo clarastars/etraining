@@ -9,7 +9,9 @@ use App\Http\Requests\Back\StoreRecordedCourseRequest;
 use App\Http\Requests\Back\UpdateRecordedCourseDetailsRequest;
 use App\Http\Requests\Back\UpdateRecordedCourseScheduleRequest;
 use App\Http\Requests\Back\UpdateRecordedCourseRequest;
+use App\Models\Back\Company;
 use App\Models\Back\RecordedCourse;
+use App\Models\Back\RecordedCourseEnrollment;
 use App\Models\Back\RecordedCourseLesson;
 use App\Services\RecordedCourseLessonVideoChunkUploadService;
 use Illuminate\Http\RedirectResponse;
@@ -179,16 +181,21 @@ class RecordedCoursesController extends Controller
 
         $recordedCourse->load([
             'lessons',
-            'enrollments.trainee',
+            'enrollments.trainee.company',
             'enrollments.lessonProgress',
         ]);
 
         $lessonsOrdered = $recordedCourse->lessons;
+        $lessonsTotal = $lessonsOrdered->count();
 
-        $enrollments = $recordedCourse->enrollments->map(function ($e) use ($lessonsOrdered) {
+        $enrollments = $recordedCourse->enrollments->map(function ($e) use ($lessonsOrdered, $lessonsTotal) {
             $byLessonId = $e->lessonProgress->keyBy('recorded_course_lesson_id');
-            $lessonProgress = $lessonsOrdered->map(function (RecordedCourseLesson $lesson) use ($byLessonId) {
+            $lessonsCompleted = 0;
+            $lessonProgress = $lessonsOrdered->map(function (RecordedCourseLesson $lesson) use ($byLessonId, &$lessonsCompleted) {
                 $p = $byLessonId->get($lesson->id);
+                if ($p?->completed_at !== null) {
+                    $lessonsCompleted++;
+                }
 
                 return [
                     'lesson_id' => $lesson->id,
@@ -199,14 +206,73 @@ class RecordedCoursesController extends Controller
                 ];
             })->values()->all();
 
+            $progressPercent = $lessonsTotal > 0
+                ? (int) round(($lessonsCompleted / $lessonsTotal) * 100)
+                : 0;
+
+            $entitlement = 'in_progress';
+            if ($e->certificate_status === RecordedCourseEnrollment::CERTIFICATE_STATUS_SENT) {
+                $entitlement = 'certificate_sent';
+            } elseif ($e->certificate_status === RecordedCourseEnrollment::CERTIFICATE_STATUS_PENDING_APPROVAL
+                || $e->certificate_status === RecordedCourseEnrollment::CERTIFICATE_STATUS_APPROVED
+                || $e->certificate_status === RecordedCourseEnrollment::CERTIFICATE_STATUS_FAILED
+                || $e->completed_at !== null) {
+                $entitlement = 'eligible';
+            } elseif ($e->checked_in_at === null) {
+                $entitlement = 'not_started';
+            }
+
             return [
                 'id' => $e->id,
                 'trainee_id' => $e->trainee_id,
                 'trainee_name' => $e->trainee?->name,
+                'trainee_email' => $e->trainee?->email,
+                'company_id' => $e->trainee?->company_id,
+                'company_name' => $e->trainee?->company?->name_ar ?: $e->trainee?->company?->name_en,
                 'enrolled_at' => $e->enrolled_at?->toIso8601String(),
+                'access_link_sent_at' => $e->access_link_sent_at?->toIso8601String(),
+                'access_url' => $e->access_token ? $e->accessUrl() : null,
+                'checked_in_at' => $e->checked_in_at?->toIso8601String(),
+                'checked_out_at' => $e->checked_out_at?->toIso8601String(),
+                'completed_at' => $e->completed_at?->toIso8601String(),
+                'certificate_status' => $e->certificate_status,
+                'delivery_status' => $e->delivery_status,
+                'lessons_completed' => $lessonsCompleted,
+                'lessons_total' => $lessonsTotal,
+                'progress_percent' => $progressPercent,
+                'entitlement' => $entitlement,
                 'lesson_progress' => $lessonProgress,
             ];
-        });
+        })->values();
+
+        $companySummaries = $enrollments
+            ->filter(fn (array $row) => ! empty($row['company_id']))
+            ->groupBy('company_id')
+            ->map(function ($rows, $companyId) {
+                $first = $rows->first();
+
+                return [
+                    'company_id' => $companyId,
+                    'company_name' => $first['company_name'] ?? $companyId,
+                    'enrolled' => $rows->count(),
+                    'checked_in' => $rows->filter(fn (array $r) => ! empty($r['checked_in_at']))->count(),
+                    'completed' => $rows->filter(fn (array $r) => ! empty($r['completed_at']))->count(),
+                    'eligible' => $rows->filter(fn (array $r) => ($r['entitlement'] ?? '') === 'eligible')->count(),
+                    'certificate_sent' => $rows->filter(fn (array $r) => ($r['entitlement'] ?? '') === 'certificate_sent')->count(),
+                ];
+            })
+            ->sortBy('company_name')
+            ->values();
+
+        $companyOptions = Company::query()
+            ->where('team_id', $recordedCourse->team_id)
+            ->orderBy('name_ar')
+            ->get(['id', 'name_ar', 'name_en'])
+            ->map(fn ($c) => [
+                'id' => $c->id,
+                'name' => $c->name_ar ?: $c->name_en,
+            ])
+            ->values();
 
         return Inertia::render('Back/Settings/RecordedCourses/Enrollments', [
             'recordedCourse' => $this->courseSummary($recordedCourse),
@@ -217,6 +283,10 @@ class RecordedCoursesController extends Controller
                 'title_en' => $lesson->title_en ?? '',
             ]),
             'enrollments' => $enrollments,
+            'companySummaries' => $companySummaries,
+            'companies' => $companyOptions,
+            'canApproveCertificates' => auth()->user()->can('approve-recorded-course-certificates'),
+            'initialFilterCompanyId' => request()->query('company_id'),
         ]);
     }
 

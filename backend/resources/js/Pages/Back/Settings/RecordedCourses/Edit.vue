@@ -4,7 +4,7 @@
       <breadcrumb-container
         :crumbs="[
           { title: 'dashboard', link: route('dashboard') },
-          { title: 'settings', link: route('back.settings') },
+          { title: 'training-disclosure', link: route('back.training-disclosure.index') },
           {
             title: 'recorded-courses',
             link: route('back.settings.recorded-courses.index'),

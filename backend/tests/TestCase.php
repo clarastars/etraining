@@ -21,7 +21,7 @@ abstract class TestCase extends BaseTestCase
         parent::setUp();
 
         if (!RefreshDatabaseState::$migrated) {
-            $this->artisan('migrate:refresh');
+            $this->artisan('migrate:fresh');
             $this->artisan('db:seed');
             RefreshDatabaseState::$migrated = true;
         }

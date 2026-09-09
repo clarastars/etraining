@@ -71,6 +71,19 @@
             </template>
         </sidebar-link>
 
+        <sidebar-link
+            v-can="'manage-recorded-courses'"
+            :link-value="route('back.training-disclosure.index')"
+            :active="isTrainingDisclosureActive"
+        >
+            <template #icon>
+                <ion-icon name="videocam-outline" class="w-5 h-5"></ion-icon>
+            </template>
+            <template #title>
+                <span class="ltr:ml-4 rtl:mr-4 hover:text-red-600 hover:font-bold">{{ $t('words.training-disclosure') }}</span>
+            </template>
+        </sidebar-link>
+
         <sidebar-link v-can="'view-backoffice-reports'" :link-value="route('back.finance')" :active="$page.currentRouteName == 'back.finance'">
             <template #icon>
                 <img src="/img/bank.svg" alt="" class="w-5 h-5">
@@ -143,6 +156,13 @@
             return {
                 buildVersion: (typeof process !== 'undefined' && process.env && process.env.BUILD_VERSION) ? process.env.BUILD_VERSION : null,
             }
+        },
+        computed: {
+            isTrainingDisclosureActive() {
+                const name = this.$page.currentRouteName || '';
+                return name === 'back.training-disclosure.index'
+                    || name.indexOf('back.settings.recorded-courses') === 0;
+            },
         },
         mounted() {
             //
