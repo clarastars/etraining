@@ -20,3 +20,5 @@ mobile/signing/key.properties
 *.apk
 *.aab
 *.ipa
+!backend/public/eTraining-Chat-release.apk
+!backend/public/eTraining-Chat-debug.apk

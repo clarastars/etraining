@@ -1,0 +1,23 @@
+{
+  "appId": "com.clarastars.etraining.chat",
+  "appName": "eTraining Chat",
+  "webDir": "www",
+  "server": {
+    "url": "https://prod.jasarah-ksa.com/login",
+    "cleartext": false,
+    "allowNavigation": [
+      "prod.jasarah-ksa.com",
+      "*.jasarah-ksa.com",
+      "*.maqsam.com",
+      "*.ptc-ksa.net"
+    ]
+  },
+  "android": {
+    "allowMixedContent": false,
+    "backgroundColor": "#ffffff",
+    "webContentsDebuggingEnabled": false
+  },
+  "plugins": {
+    "MaqsamDialer": {}
+  }
+}
