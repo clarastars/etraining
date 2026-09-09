@@ -128,19 +128,26 @@ import JetInput from '@/Jetstream/Input'
 import JetLabel from '@/Jetstream/Label'
 import JetButton from '@/Jetstream/Button'
 import BreadcrumbContainer from '@/Components/BreadcrumbContainer'
+import {
+    isNativeMaqsamDialerAvailable,
+    nativeDialerFocus,
+    nativeDialerIsOpen,
+    nativeDialerOpen,
+} from '@/maqsamNativeDialer'
 
-let dialerPopup = null;
+let dialerPopup = null
+let nativeDialerConnected = false
 
 function liveDialerPopup() {
     try {
         if (dialerPopup && !dialerPopup.closed) {
-            return dialerPopup;
+            return dialerPopup
         }
     } catch (error) {
         // ignore
     }
 
-    return null;
+    return null
 }
 
 export default {
@@ -171,104 +178,141 @@ export default {
             dialing: false,
             errorMessage: '',
             successMessage: '',
+            useNativeDialer: isNativeMaqsamDialerAvailable(),
         }
     },
 
     methods: {
         isPopupAlreadyOnMaqsam(popup) {
             if (!popup) {
-                return false;
+                return false
             }
 
             try {
                 if (popup.closed) {
-                    return false;
+                    return false
                 }
 
-                const href = popup.location.href || '';
+                const href = popup.location.href || ''
 
-                return href !== '' && href !== 'about:blank';
+                return href !== '' && href !== 'about:blank'
             } catch (error) {
-                return true;
+                return true
             }
         },
-        async connectDialer() {
-            const existing = liveDialerPopup() || window.open('', 'maqsam-dialer', 'toolbar=no,menubar=no,width=420,height=720');
-
-            if (!existing) {
-                this.errorMessage = this.$t('words.caller-popup-blocked');
-                return false;
-            }
-
-            dialerPopup = existing;
+        async connectDialerNative() {
+            this.connecting = true
+            this.errorMessage = ''
+            this.successMessage = ''
 
             try {
-                existing.focus();
+                if (await nativeDialerIsOpen()) {
+                    await nativeDialerFocus()
+                    nativeDialerConnected = true
+                    return true
+                }
+
+                const response = await axios.post(route('caller.connect'), {
+                    email: this.agentEmail,
+                })
+
+                await nativeDialerOpen(response.data.url)
+                nativeDialerConnected = true
+                return true
+            } catch (error) {
+                nativeDialerConnected = false
+                this.errorMessage = error.response?.data?.message
+                    || error.message
+                    || this.$t('words.caller-maqsam-login-failed')
+                return false
+            } finally {
+                this.connecting = false
+            }
+        },
+        async connectDialerPopup() {
+            const existing = liveDialerPopup() || window.open('', 'maqsam-dialer', 'toolbar=no,menubar=no,width=420,height=720')
+
+            if (!existing) {
+                this.errorMessage = this.$t('words.caller-popup-blocked')
+                return false
+            }
+
+            dialerPopup = existing
+
+            try {
+                existing.focus()
             } catch (error) {
                 // ignore
             }
 
             if (this.isPopupAlreadyOnMaqsam(existing)) {
-                this.errorMessage = '';
-                return true;
+                this.errorMessage = ''
+                return true
             }
 
-            this.connecting = true;
-            this.errorMessage = '';
-            this.successMessage = '';
+            this.connecting = true
+            this.errorMessage = ''
+            this.successMessage = ''
 
             try {
                 const response = await axios.post(route('caller.connect'), {
                     email: this.agentEmail,
-                });
+                })
 
                 try {
                     if (existing.closed) {
-                        this.errorMessage = this.$t('words.caller-popup-blocked');
-                        return false;
+                        this.errorMessage = this.$t('words.caller-popup-blocked')
+                        return false
                     }
 
-                    existing.location.href = response.data.url;
+                    existing.location.href = response.data.url
                 } catch (error) {
-                    this.errorMessage = this.$t('words.caller-popup-blocked');
-                    return false;
+                    this.errorMessage = this.$t('words.caller-popup-blocked')
+                    return false
                 }
 
-                return true;
+                return true
             } catch (error) {
-                this.errorMessage = error.response?.data?.message || this.$t('words.caller-maqsam-login-failed');
-                return false;
+                this.errorMessage = error.response?.data?.message || this.$t('words.caller-maqsam-login-failed')
+                return false
             } finally {
-                this.connecting = false;
+                this.connecting = false
             }
+        },
+        async connectDialer() {
+            if (this.useNativeDialer) {
+                return this.connectDialerNative()
+            }
+
+            return this.connectDialerPopup()
         },
 
         async dial() {
             if (!this.phone) {
-                return;
+                return
             }
 
-            this.dialing = true;
-            this.errorMessage = '';
-            this.successMessage = '';
+            this.dialing = true
+            this.errorMessage = ''
+            this.successMessage = ''
 
             try {
-                const connected = await this.connectDialer();
+                const connected = await this.connectDialer()
                 if (!connected) {
-                    return;
+                    return
                 }
 
                 const response = await axios.post(route('caller.dial'), {
                     phone: this.phone,
                     email: this.agentEmail,
-                });
+                })
 
-                this.successMessage = response.data.message;
-                this.phone = '';
+                this.successMessage = response.data.message
+                this.phone = ''
             } catch (error) {
-                this.errorMessage = error.response?.data?.message || this.$t('words.caller-dial-failed');
+                this.errorMessage = error.response?.data?.message || this.$t('words.caller-dial-failed')
             } finally {
-                this.dialing = false;
+                this.dialing = false
             }
         },
     },

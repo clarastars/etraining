@@ -70,10 +70,7 @@ final class WhatsAppTraineeLinker
     public static function attachTraineeIfMissing(WhatsAppConversation $conversation): WhatsAppConversation
     {
         if ($conversation->trainee_id) {
-            $conversation->loadMissing([
-                'trainee:id,name,phone,identity_number,company_id',
-                'trainee.company:id,name_ar',
-            ]);
+            WhatsAppConversationTrainee::loadOnto($conversation);
 
             return $conversation;
         }

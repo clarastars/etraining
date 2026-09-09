@@ -285,6 +285,11 @@
                                                     <span v-else dir="ltr">{{ conv.phone }}</span>
                                                 </span>
                                                 <span
+                                                    v-if="conversationAccountStatusLabel(conv)"
+                                                    class="text-xs font-medium flex-shrink-0"
+                                                    :class="conversationAccountStatusClass(conv)"
+                                                >{{ conversationAccountStatusLabel(conv) }}</span>
+                                                <span
                                                     v-if="conv.trainee && Number(conv.unpaid_invoice_count) > 0"
                                                     class="text-red-600 text-xs font-semibold flex-shrink-0"
                                                     :title="$t('words.unpaid-invoices')"
@@ -312,6 +317,14 @@
                                                     :title="$t('words.whatsapp-window-locked')"
                                                 ></ion-icon>
                                             </span>
+                                        </div>
+                                        <div
+                                            v-if="conversationAccountReason(conv)"
+                                            class="text-xs mt-0.5 truncate"
+                                            :class="conversationAccountStatusClass(conv)"
+                                            :title="conversationAccountReason(conv)"
+                                        >
+                                            {{ conversationAccountReason(conv) }}
                                         </div>
                                         <div class="flex items-center justify-between gap-2 mt-0.5">
                                             <span class="text-xs text-gray-500 truncate">
@@ -381,8 +394,23 @@
                                     {{ selectedConversation.trainee ? selectedConversation.trainee.name.charAt(0) : 'W' }}
                                 </div>
                                 <div class="min-w-0 flex-1">
-                                    <div class="font-semibold text-gray-900 text-xs sm:text-sm truncate">
-                                        {{ selectedConversation.trainee ? selectedConversation.trainee.name : selectedConversation.phone }}
+                                    <div class="font-semibold text-gray-900 text-xs sm:text-sm inline-flex items-center gap-1.5 min-w-0 max-w-full">
+                                        <span class="truncate min-w-0">
+                                            {{ selectedConversation.trainee ? selectedConversation.trainee.name : selectedConversation.phone }}
+                                        </span>
+                                        <span
+                                            v-if="selectedConversationAccountStatusLabel"
+                                            class="text-xs font-medium flex-shrink-0"
+                                            :class="selectedConversationAccountStatusClass"
+                                        >{{ selectedConversationAccountStatusLabel }}</span>
+                                    </div>
+                                    <div
+                                        v-if="selectedConversationAccountReason"
+                                        class="text-xs mt-0.5 truncate"
+                                        :class="selectedConversationAccountStatusClass"
+                                        :title="selectedConversationAccountReason"
+                                    >
+                                        {{ selectedConversationAccountReason }}
                                     </div>
                                     <div
                                         v-if="selectedConversation.trainee"
@@ -2426,6 +2454,15 @@ export default {
             }
             return 'text-green-700';
         },
+        selectedConversationAccountStatusLabel() {
+            return this.conversationAccountStatusLabel(this.selectedConversation);
+        },
+        selectedConversationAccountStatusClass() {
+            return this.conversationAccountStatusClass(this.selectedConversation);
+        },
+        selectedConversationAccountReason() {
+            return this.conversationAccountReason(this.selectedConversation);
+        },
         manualTemplateVariables() {
             if (!this.selectedTemplate) {
                 return [];
@@ -2538,6 +2575,44 @@ export default {
         }
     },
     methods: {
+        conversationAccountStatus(conv) {
+            return conv && conv.trainee && conv.trainee.account_status
+                ? conv.trainee.account_status
+                : null;
+        },
+        conversationAccountStatusLabel(conv) {
+            const status = this.conversationAccountStatus(conv);
+            if (!status) {
+                return '';
+            }
+            if (status.is_suspended) {
+                return this.$t('words.account-suspended');
+            }
+            if (status.is_blocked) {
+                return this.$t('words.account-blocked');
+            }
+            return '';
+        },
+        conversationAccountStatusClass(conv) {
+            const status = this.conversationAccountStatus(conv);
+            if (!status) {
+                return 'text-gray-700';
+            }
+            if (status.is_suspended) {
+                return 'text-red-700';
+            }
+            if (status.is_blocked) {
+                return 'text-orange-800';
+            }
+            return 'text-gray-700';
+        },
+        conversationAccountReason(conv) {
+            const status = this.conversationAccountStatus(conv);
+            if (!status || (!status.is_suspended && !status.is_blocked)) {
+                return '';
+            }
+            return status.reason ? String(status.reason) : '';
+        },
         startMaqsamWindowWatcher() {
             this.stopMaqsamWindowWatcher();
             this.syncMaqsamWindow();
@@ -2549,9 +2624,18 @@ export default {
                 this.maqsamWindowTimer = null;
             }
         },
-        syncMaqsamWindow() {
+        async syncMaqsamWindow() {
             const dialer = this.$refs.maqsamDialer;
-            this.maqsamWindowOpen = !!(dialer && typeof dialer.isWindowOpen === 'function' && dialer.isWindowOpen());
+            if (!dialer || typeof dialer.isWindowOpen !== 'function') {
+                this.maqsamWindowOpen = false;
+                return;
+            }
+
+            try {
+                this.maqsamWindowOpen = !!(await dialer.isWindowOpen());
+            } catch (error) {
+                this.maqsamWindowOpen = false;
+            }
         },
         async callSelectedConversation() {
             const phone = this.selectedConversation && this.selectedConversation.phone;
@@ -2567,10 +2651,10 @@ export default {
             this.maqsamDialing = true;
             this.errorMessage = '';
             try {
-                this.syncMaqsamWindow();
+                await this.syncMaqsamWindow();
                 if (!this.maqsamWindowOpen) {
                     await dialer.connectDialer();
-                    this.syncMaqsamWindow();
+                    await this.syncMaqsamWindow();
                     if (dialer.errorMessage) {
                         this.errorMessage = dialer.errorMessage;
                     }
@@ -2578,7 +2662,7 @@ export default {
                 }
 
                 await dialer.dial(phone);
-                this.syncMaqsamWindow();
+                await this.syncMaqsamWindow();
                 if (dialer.errorMessage) {
                     this.errorMessage = dialer.errorMessage;
                 }

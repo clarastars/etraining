@@ -5,3 +5,18 @@ etraining-db
 .DS_Store
 .cursor/mcp.json
 .aider*
+
+# Android / Capacitor agent chat APK
+mobile/node_modules/
+mobile/android/.gradle/
+mobile/android/app/build/
+mobile/android/build/
+mobile/android/captures/
+mobile/android/local.properties
+mobile/android/app/release/
+mobile/signing/*.jks
+mobile/signing/*.keystore
+mobile/signing/key.properties
+*.apk
+*.aab
+*.ipa

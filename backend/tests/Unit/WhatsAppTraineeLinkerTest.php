@@ -88,6 +88,30 @@ class WhatsAppTraineeLinkerTest extends BaseTestCase
         $this->assertSame($trainee->id, $conversation->trainee->id);
     }
 
+    public function test_attach_trainee_if_missing_loads_soft_deleted_trainee(): void
+    {
+        $trainee = $this->makeTrainee('0512345678');
+        $trainee->deleted_remark = 'non-payment';
+        $trainee->suspended_at = now();
+        $trainee->save();
+        $trainee->delete();
+
+        $conversation = WhatsAppConversation::query()->create([
+            'id' => (string) Str::uuid(),
+            'phone' => $this->conversationPhone,
+            'trainee_id' => $trainee->id,
+            'status' => WhatsAppConversation::STATUS_OPEN,
+        ]);
+
+        WhatsAppTraineeLinker::attachTraineeIfMissing($conversation);
+
+        $this->assertTrue($conversation->relationLoaded('trainee'));
+        $this->assertNotNull($conversation->trainee);
+        $this->assertSame($trainee->id, $conversation->trainee->id);
+        $this->assertTrue($conversation->trainee->trashed());
+        $this->assertSame('non-payment', $conversation->trainee->deleted_remark);
+    }
+
     public function test_does_not_steal_conversation_already_linked_to_another_trainee(): void
     {
         $existingTrainee = $this->makeTrainee('0599999999');
@@ -131,8 +155,11 @@ class WhatsAppTraineeLinkerTest extends BaseTestCase
             $table->uuid('id')->primary();
             $table->string('name')->nullable();
             $table->string('phone')->nullable();
+            $table->string('identity_number')->nullable();
             $table->uuid('team_id')->nullable();
             $table->uuid('company_id')->nullable();
+            $table->timestamp('suspended_at')->nullable();
+            $table->string('deleted_remark')->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

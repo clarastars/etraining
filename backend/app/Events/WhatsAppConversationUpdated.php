@@ -7,6 +7,7 @@ namespace App\Events;
 use App\Models\Back\WhatsAppConversation;
 use App\Models\Back\Invoice;
 use App\Support\WhatsAppBotPause;
+use App\Support\WhatsAppConversationTrainee;
 use App\Support\WhatsAppMessagingWindow;
 use App\Support\WhatsAppTraineeLinker;
 use Illuminate\Broadcasting\Channel;
@@ -41,24 +42,28 @@ class WhatsAppConversationUpdated implements ShouldBroadcastNow
         $conversation->loadMissing([
             'agents:id,name',
             'tags:id,name,color',
-            'trainee:id,name,phone,identity_number,company_id',
-            'trainee.company:id,name_ar',
         ]);
+        WhatsAppConversationTrainee::loadOnto(
+            $conversation,
+            static function ($query): void {
+                $query->select(['id', 'name_ar']);
+            }
+        );
 
         $authId = auth()->id();
+        $trainee = $conversation->trainee;
 
         return new self([
             'id' => $conversation->id,
             'phone' => $conversation->phone,
             'status' => $conversation->status ?: WhatsAppConversation::STATUS_OPEN,
-            'trainee' => $conversation->trainee ? [
-                'id' => $conversation->trainee->id,
-                'name' => $conversation->trainee->name,
-                'phone' => $conversation->trainee->phone,
-                'identity_number' => $conversation->trainee->identity_number,
-                'company_name' => $conversation->trainee->company?->name_ar,
-                'show_url' => route('back.trainees.show', $conversation->trainee->id),
-            ] : null,
+            'trainee' => WhatsAppConversationTrainee::format(
+                $trainee,
+                $trainee?->company?->name_ar,
+                $trainee && $trainee->company_id
+                    ? route('back.companies.show', $trainee->company_id)
+                    : null,
+            ),
             'last_message' => [
                 'body' => $conversation->last_message_body,
                 'direction' => $conversation->last_message_direction,
