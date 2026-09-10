@@ -304,28 +304,8 @@ final class WhatsAppAiTraineeTools
 
     private function findTrainee(string $normalizedPhone): ?Trainee
     {
-        $phone = $this->whatsAppService->normalizePhoneDigits($normalizedPhone);
-        if ($phone === '') {
-            return null;
-        }
-
-        $digits = preg_replace('/\D+/', '', $phone) ?? '';
-        $suffix = substr($digits, -9);
-        if ($suffix === '' || strlen($suffix) < 9) {
-            return null;
-        }
-
-        // Include soft-deleted (suspended) trainees so account status can be reported.
-        return Trainee::withTrashed()
-            ->whereNotNull('phone')
-            ->where('phone', '!=', '')
-            ->where(function ($query) use ($phone, $digits, $suffix) {
-                $query->where('phone', 'LIKE', '%' . $phone . '%')
-                    ->orWhere('phone', 'LIKE', '%' . $digits . '%')
-                    ->orWhere('phone', 'LIKE', '%' . $suffix);
-            })
-            ->orderByRaw('CASE WHEN deleted_at IS NULL THEN 0 ELSE 1 END')
-            ->orderByDesc('updated_at')
-            ->first();
+        return $this->whatsAppService->findTraineeByPhone(
+            $this->whatsAppService->normalizePhoneDigits($normalizedPhone)
+        );
     }
 }

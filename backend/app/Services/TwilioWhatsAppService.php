@@ -302,15 +302,35 @@ class TwilioWhatsAppService
             return null;
         }
 
+        $phoneMatches = static function ($query) use ($normalizedPhone, $digits, $suffix): void {
+            $query->where('phone', 'LIKE', '%' . $normalizedPhone . '%')
+                ->orWhere('phone', 'LIKE', '%' . $digits . '%')
+                ->orWhere('phone', 'LIKE', '%' . $suffix);
+        };
+
+        $additionalMatches = static function ($query) use ($normalizedPhone, $digits, $suffix): void {
+            $query->where('phone_additional', 'LIKE', '%' . $normalizedPhone . '%')
+                ->orWhere('phone_additional', 'LIKE', '%' . $digits . '%')
+                ->orWhere('phone_additional', 'LIKE', '%' . $suffix);
+        };
+
         return Trainee::withTrashed()
-            ->whereNotNull('phone')
-            ->where('phone', '!=', '')
-            ->where(function ($query) use ($normalizedPhone, $digits, $suffix) {
-                $query->where('phone', 'LIKE', '%' . $normalizedPhone . '%')
-                    ->orWhere('phone', 'LIKE', '%' . $digits . '%')
-                    ->orWhere('phone', 'LIKE', '%' . $suffix);
+            ->where(function ($query) use ($phoneMatches, $additionalMatches) {
+                $query->where(function ($q) use ($phoneMatches) {
+                    $q->whereNotNull('phone')
+                        ->where('phone', '!=', '')
+                        ->where($phoneMatches);
+                })->orWhere(function ($q) use ($additionalMatches) {
+                    $q->whereNotNull('phone_additional')
+                        ->where('phone_additional', '!=', '')
+                        ->where($additionalMatches);
+                });
             })
             ->orderByRaw('CASE WHEN deleted_at IS NULL THEN 0 ELSE 1 END')
+            ->orderByRaw(
+                'CASE WHEN phone LIKE ? OR phone LIKE ? OR phone LIKE ? THEN 0 ELSE 1 END',
+                ['%' . $normalizedPhone . '%', '%' . $digits . '%', '%' . $suffix]
+            )
             ->orderByDesc('updated_at')
             ->first();
     }

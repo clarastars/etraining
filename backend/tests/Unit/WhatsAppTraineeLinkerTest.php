@@ -156,6 +156,24 @@ class WhatsAppTraineeLinkerTest extends BaseTestCase
         $this->assertFalse($conversation->trainee->trashed());
     }
 
+    public function test_attach_trainee_if_missing_links_via_phone_additional(): void
+    {
+        $trainee = $this->makeTrainee('0599999999');
+        $trainee->phone_additional = '0533898058';
+        $trainee->save();
+
+        $conversation = WhatsAppConversation::query()->create([
+            'id' => (string) Str::uuid(),
+            'phone' => '+966533898058',
+            'trainee_id' => null,
+            'status' => WhatsAppConversation::STATUS_OPEN,
+        ]);
+
+        WhatsAppTraineeLinker::attachTraineeIfMissing($conversation);
+
+        $this->assertSame($trainee->id, $conversation->fresh()->trainee_id);
+    }
+
     public function test_does_not_steal_conversation_already_linked_to_another_trainee(): void
     {
         $existingTrainee = $this->makeTrainee('0599999999');
@@ -199,6 +217,7 @@ class WhatsAppTraineeLinkerTest extends BaseTestCase
             $table->uuid('id')->primary();
             $table->string('name')->nullable();
             $table->string('phone')->nullable();
+            $table->string('phone_additional')->nullable();
             $table->string('identity_number')->nullable();
             $table->uuid('team_id')->nullable();
             $table->uuid('company_id')->nullable();
