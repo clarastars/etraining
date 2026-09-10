@@ -10,17 +10,11 @@ Single Android app for agents: WhatsApp inbox (`/back/chat`) plus an **in-app Ma
 
 ## Configure server URL
 
-Default Capacitor server URL points at production login:
+Default Capacitor server URL opens chat directly (chat-only shell):
 
-`https://prod.jasarah-ksa.com/login`
+`https://prod.jasarah-ksa.com/back/chat?source=chat-app`
 
-Change it in [`capacitor.config.json`](capacitor.config.json) if you need staging/local, then re-sync:
-
-```bash
-cd mobile
-npx cap sync android
-```
-
+Login still appears when needed; after OTP the APK lands on chat (not the platform dashboard). Navigation outside chat/login/caller is redirected back to chat.
 ## Build
 
 ```bash
@@ -69,12 +63,11 @@ Locally (with `php artisan serve` / your usual host):
 
 ## Agent usage
 
-1. Open the app → log in with your **eTraining** account.
-2. Go to **Chat** (`/back/chat`).
-3. Tap **Call** on a conversation:
+1. Open the app → it opens **Chat** (or login, then Chat). You will not see the platform dashboard.
+2. Tap **Call** on a conversation:
    - First tap opens the **in-app Maqsam dialer** (autologin). Keep it online; use **Minimize** to return to chat without killing the dialer session.
    - Later taps place the call via Maqsam API while the dialer session stays alive.
-4. Your eTraining user **email must match** your Maqsam agent email.
+3. Your eTraining user **email must match** your Maqsam agent email.
 
 ## Deploy note
 

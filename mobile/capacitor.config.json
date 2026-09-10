@@ -3,7 +3,7 @@
   "appName": "eTraining Chat",
   "webDir": "www",
   "server": {
-    "url": "https://prod.jasarah-ksa.com/login",
+    "url": "https://prod.jasarah-ksa.com/back/chat?source=chat-app",
     "cleartext": false,
     "allowNavigation": [
       "prod.jasarah-ksa.com",

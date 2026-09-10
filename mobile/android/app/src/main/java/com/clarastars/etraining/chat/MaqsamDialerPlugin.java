@@ -223,6 +223,16 @@ public class MaqsamDialerPlugin extends Plugin {
         settings.setMediaPlaybackRequiresUserGesture(false);
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(false);
+        // Maqsam's web dialer blocks mobile/tablet UAs; present as desktop Chrome.
+        settings.setUserAgentString(
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                + "(KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+        );
+        settings.setUseWideViewPort(true);
+        settings.setLoadWithOverviewMode(true);
+        settings.setSupportZoom(true);
+        settings.setBuiltInZoomControls(true);
+        settings.setDisplayZoomControls(false);
 
         CookieManager cookieManager = CookieManager.getInstance();
         cookieManager.setAcceptCookie(true);
@@ -230,7 +240,20 @@ public class MaqsamDialerPlugin extends Plugin {
             cookieManager.setAcceptThirdPartyCookies(dialerWebView, true);
         }
 
-        dialerWebView.setWebViewClient(new WebViewClient());
+        dialerWebView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                // Force a desktop-like viewport so Maqsam does not treat the shell as a phone.
+                view.evaluateJavascript(
+                    "(function(){"
+                        + "var m=document.querySelector('meta[name=viewport]');"
+                        + "if(!m){m=document.createElement('meta');m.name='viewport';document.head.appendChild(m);}"
+                        + "m.setAttribute('content','width=1280, initial-scale=0.5, maximum-scale=3, user-scalable=yes');"
+                        + "})();",
+                    null
+                );
+            }
+        });
         dialerWebView.setWebChromeClient(new WebChromeClient() {
             @Override
             public void onPermissionRequest(final PermissionRequest request) {

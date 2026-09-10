@@ -2,6 +2,8 @@ package com.clarastars.etraining.chat;
 
 import android.os.Bundle;
 import android.view.WindowManager;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
 
 import com.getcapacitor.BridgeActivity;
 
@@ -16,5 +18,31 @@ public class MainActivity extends BridgeActivity {
             WindowManager.LayoutParams.FLAG_SECURE,
             WindowManager.LayoutParams.FLAG_SECURE
         );
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        markChatAppUserAgent();
+    }
+
+    private void markChatAppUserAgent() {
+        if (this.bridge == null) {
+            return;
+        }
+
+        WebView webView = this.bridge.getWebView();
+        if (webView == null) {
+            return;
+        }
+
+        WebSettings settings = webView.getSettings();
+        String current = settings.getUserAgentString();
+        if (current == null) {
+            current = "";
+        }
+        if (!current.contains("eTrainingChatApp")) {
+            settings.setUserAgentString(current + " eTrainingChatApp/1.0");
+        }
     }
 }

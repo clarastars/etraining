@@ -41,7 +41,7 @@
                         {{ $t('words.reports') }}
                     </inertia-link>
                     <inertia-link
-                        v-if="!isStandalonePwa"
+                        v-if="!isChatOnlyShell"
                         :href="route('dashboard')"
                         class="text-xs leading-tight text-gray-600 hover:text-gray-900 border border-gray-300 bg-white hover:bg-gray-50 px-2 py-1 rounded-md font-medium transition whitespace-nowrap"
                     >
@@ -2081,6 +2081,10 @@ export default {
     computed: {
         csvWizardComponent() {
             return FinanceWhatsAppCsvWizard;
+        },
+        isChatOnlyShell() {
+            const fromServer = !!(this.$page && this.$page.props && this.$page.props.chatAppMode);
+            return !!(this.isStandalonePwa || fromServer);
         },
         maqsamCallButtonLabel() {
             if (this.maqsamDialing) {
