@@ -295,19 +295,23 @@ class TwilioWhatsAppService
 
     public function findTraineeByPhone(string $normalizedPhone): ?Trainee
     {
-        $suffix = substr($normalizedPhone, -9);
+        $digits = preg_replace('/\D+/', '', $normalizedPhone) ?? '';
+        $suffix = substr($digits, -9);
 
-        if ($suffix === '' || $suffix === false) {
+        if ($suffix === '' || strlen($suffix) < 9) {
             return null;
         }
 
-        return Trainee::query()
+        return Trainee::withTrashed()
             ->whereNotNull('phone')
             ->where('phone', '!=', '')
-            ->where(function ($query) use ($normalizedPhone, $suffix) {
+            ->where(function ($query) use ($normalizedPhone, $digits, $suffix) {
                 $query->where('phone', 'LIKE', '%' . $normalizedPhone . '%')
+                    ->orWhere('phone', 'LIKE', '%' . $digits . '%')
                     ->orWhere('phone', 'LIKE', '%' . $suffix);
             })
+            ->orderByRaw('CASE WHEN deleted_at IS NULL THEN 0 ELSE 1 END')
+            ->orderByDesc('updated_at')
             ->first();
     }
 

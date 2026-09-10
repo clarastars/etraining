@@ -309,8 +309,9 @@ final class WhatsAppAiTraineeTools
             return null;
         }
 
-        $suffix = substr($phone, -9);
-        if ($suffix === '' || $suffix === false) {
+        $digits = preg_replace('/\D+/', '', $phone) ?? '';
+        $suffix = substr($digits, -9);
+        if ($suffix === '' || strlen($suffix) < 9) {
             return null;
         }
 
@@ -318,10 +319,13 @@ final class WhatsAppAiTraineeTools
         return Trainee::withTrashed()
             ->whereNotNull('phone')
             ->where('phone', '!=', '')
-            ->where(function ($query) use ($phone, $suffix) {
+            ->where(function ($query) use ($phone, $digits, $suffix) {
                 $query->where('phone', 'LIKE', '%' . $phone . '%')
+                    ->orWhere('phone', 'LIKE', '%' . $digits . '%')
                     ->orWhere('phone', 'LIKE', '%' . $suffix);
             })
+            ->orderByRaw('CASE WHEN deleted_at IS NULL THEN 0 ELSE 1 END')
+            ->orderByDesc('updated_at')
             ->first();
     }
 }
