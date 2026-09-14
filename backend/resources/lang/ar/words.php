@@ -179,6 +179,8 @@ return [
     'training-disclosure-step-3' => 'يتابع الموظف الدورة بدون تسجيل دخول (حضور وانصراف).',
     'training-disclosure-step-4' => 'عند إكمال كل الدروس تظهر الحالة بانتظار اعتماد الشهادة.',
     'training-disclosure-step-5' => 'اعتمد الشهادة ليرسل ملف PDF للموظف مع نسخة للشركة.',
+    'training-disclosure-ready' => 'جاهزة للخدمة',
+    'training-disclosure-not-ready' => 'غير جاهزة',
     'manage-recorded-courses' => 'إدارة الدورات المسجلة',
     'access-whatsapp-chats' => 'الوصول لمحادثات واتساب',
     'view-whatsapp-reports' => 'عرض تقارير واتساب',

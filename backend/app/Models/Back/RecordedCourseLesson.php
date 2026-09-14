@@ -28,6 +28,7 @@ class RecordedCourseLesson extends Model implements HasMedia
         'sort_order',
         'title_ar',
         'title_en',
+        'drive_file_id',
     ];
 
     protected $casts = [
@@ -58,32 +59,37 @@ class RecordedCourseLesson extends Model implements HasMedia
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection(self::VIDEO_COLLECTION)
+            ->useDisk('s3')
             ->singleFile()
             ->acceptsMimeTypes(['video/mp4', 'video/webm', 'video/quicktime']);
     }
 
-    public function attachVideo(UploadedFile $file): Media
+    public function attachVideo(UploadedFile $file, ?string $teamId = null): Media
     {
         $this->clearMediaCollection(self::VIDEO_COLLECTION);
 
-        $teamId = auth()->user()->currentTeam()->first()->id;
+        $teamId = $teamId ?? auth()->user()->currentTeam()->first()->id;
 
         return $this->addMedia($file)
             ->usingFileName($file->hashName())
             ->withAttributes([
                 'team_id' => $teamId,
             ])
-            ->toMediaCollection(self::VIDEO_COLLECTION);
+            ->toMediaCollection(self::VIDEO_COLLECTION, 's3');
     }
 
     /**
-     * Attach a fully assembled upload from disk (e.g. chunked upload temp file) and remove the source file.
+     * Attach a fully assembled upload from disk (e.g. chunked upload or Drive import)
+     * onto S3 and remove the source file.
      */
-    public function attachVideoFromAssembledFile(string $absolutePath, string $originalFilename): Media
-    {
+    public function attachVideoFromAssembledFile(
+        string $absolutePath,
+        string $originalFilename,
+        ?string $teamId = null
+    ): Media {
         $this->clearMediaCollection(self::VIDEO_COLLECTION);
 
-        $teamId = auth()->user()->currentTeam()->first()->id;
+        $teamId = $teamId ?? auth()->user()->currentTeam()->first()->id;
         $storedName = $this->storedFileNameFromOriginal($originalFilename);
 
         try {
@@ -92,7 +98,7 @@ class RecordedCourseLesson extends Model implements HasMedia
                 ->withAttributes([
                     'team_id' => $teamId,
                 ])
-                ->toMediaCollection(self::VIDEO_COLLECTION);
+                ->toMediaCollection(self::VIDEO_COLLECTION, 's3');
         } finally {
             if (is_file($absolutePath)) {
                 @unlink($absolutePath);

@@ -21,10 +21,14 @@ class RecordedCourse extends Model
         'description',
         'unlock_delay_hours',
         'allowed_weekdays',
+        'drive_folder_id',
+        'drive_synced_at',
+        'team_id',
     ];
 
     protected $casts = [
         'unlock_delay_hours' => 'integer',
+        'drive_synced_at' => 'datetime',
     ];
 
     /**

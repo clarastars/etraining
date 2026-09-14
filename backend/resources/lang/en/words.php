@@ -179,6 +179,8 @@ return [
     'training-disclosure-step-3' => 'Employees take the course without logging in (check-in / check-out).',
     'training-disclosure-step-4' => 'When all lessons are done, status becomes pending certificate approval.',
     'training-disclosure-step-5' => 'Approve to send the PDF certificate to the employee with the company CC’d.',
+    'training-disclosure-ready' => 'Ready to serve',
+    'training-disclosure-not-ready' => 'Not ready',
     'manage-recorded-courses' => 'Manage recorded courses',
     'access-whatsapp-chats' => 'Access WhatsApp chats',
     'view-whatsapp-reports' => 'View WhatsApp reports',

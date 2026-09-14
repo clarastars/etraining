@@ -361,6 +361,20 @@ class RecordedCourseDisclosureFlowTest extends TestCase
                 $this->assertSame(1, $stats['pending_approval']);
             })
             ->assertPropCount('courses', 1)
-            ->assertPropCount('pendingApprovals', 1);
+            ->assertPropCount('pendingApprovals', 1)
+            ->assertPropValue('courses', function ($courses) {
+                $this->assertArrayHasKey('ready', $courses[0]);
+                $this->assertArrayHasKey('lessons_count', $courses[0]);
+            });
+    }
+
+    public function test_recorded_course_lesson_video_collection_uses_s3(): void
+    {
+        $lesson = new RecordedCourseLesson();
+        $lesson->registerMediaCollections();
+
+        $collection = $lesson->getMediaCollection(RecordedCourseLesson::VIDEO_COLLECTION);
+        $this->assertNotNull($collection);
+        $this->assertSame('s3', $collection->diskName);
     }
 }

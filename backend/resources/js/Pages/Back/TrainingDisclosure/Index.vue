@@ -75,8 +75,27 @@
               class="px-5 py-3 flex flex-wrap items-center justify-between gap-3"
             >
               <div>
-                <p class="font-medium text-gray-900">{{ courseTitle(course) }}</p>
+                <p class="font-medium text-gray-900 flex flex-wrap items-center gap-2">
+                  <span>{{ courseTitle(course) }}</span>
+                  <span
+                    v-if="course.ready"
+                    class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800"
+                  >
+                    {{ $t("words.training-disclosure-ready") }}
+                  </span>
+                  <span
+                    v-else
+                    class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600"
+                  >
+                    {{ $t("words.training-disclosure-not-ready") }}
+                  </span>
+                </p>
                 <p class="text-xs text-gray-500 mt-0.5">
+                  {{ $t("words.recorded-course-videos-ready-count", {
+                    ready: course.lessons_with_video_count,
+                    total: course.lessons_count,
+                  }) }}
+                  ·
                   {{ $t("words.recorded-course-enrollments-count", { count: course.enrollments_count }) }}
                   ·
                   {{ $t("words.training-disclosure-stat-completed") }}:

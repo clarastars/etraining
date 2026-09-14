@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Back;
 use App\Http\Controllers\Controller;
 use App\Models\Back\RecordedCourse;
 use App\Models\Back\RecordedCourseEnrollment;
+use App\Models\Back\RecordedCourseLesson;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -34,6 +35,7 @@ class TrainingDisclosureController extends Controller
             ->value('aggregate');
 
         $courses = RecordedCourse::query()
+            ->with(['lessons.media'])
             ->withCount([
                 'enrollments',
                 'enrollments as pending_approval_count' => function ($q): void {
@@ -42,18 +44,32 @@ class TrainingDisclosureController extends Controller
                 'enrollments as completed_enrollments_count' => function ($q): void {
                     $q->whereNotNull('completed_at');
                 },
+                'lessons',
             ])
             ->latest()
-            ->limit(10)
+            ->limit(50)
             ->get()
-            ->map(fn (RecordedCourse $course) => [
-                'id' => $course->id,
-                'name_ar' => $course->name_ar,
-                'name_en' => $course->name_en,
-                'enrollments_count' => (int) $course->enrollments_count,
-                'completed_enrollments_count' => (int) $course->completed_enrollments_count,
-                'pending_approval_count' => (int) $course->pending_approval_count,
-            ]);
+            ->map(function (RecordedCourse $course) {
+                $lessons = $course->lessons;
+                $withVideo = $lessons->filter(
+                    fn ($lesson) => $lesson->getFirstMedia(RecordedCourseLesson::VIDEO_COLLECTION) !== null
+                )->count();
+                $ready = $lessons->count() > 0 && $withVideo === $lessons->count();
+
+                return [
+                    'id' => $course->id,
+                    'name_ar' => $course->name_ar,
+                    'name_en' => $course->name_en,
+                    'enrollments_count' => (int) $course->enrollments_count,
+                    'completed_enrollments_count' => (int) $course->completed_enrollments_count,
+                    'pending_approval_count' => (int) $course->pending_approval_count,
+                    'lessons_count' => (int) $course->lessons_count,
+                    'lessons_with_video_count' => $withVideo,
+                    'ready' => $ready,
+                    'drive_folder_id' => $course->drive_folder_id,
+                    'drive_synced_at' => $course->drive_synced_at?->toIso8601String(),
+                ];
+            });
 
         $pendingApprovals = RecordedCourseEnrollment::query()
             ->with([
