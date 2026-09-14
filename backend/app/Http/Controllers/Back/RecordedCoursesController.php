@@ -9,7 +9,6 @@ use App\Http\Requests\Back\StoreRecordedCourseRequest;
 use App\Http\Requests\Back\UpdateRecordedCourseDetailsRequest;
 use App\Http\Requests\Back\UpdateRecordedCourseScheduleRequest;
 use App\Http\Requests\Back\UpdateRecordedCourseRequest;
-use App\Models\Back\Company;
 use App\Models\Back\RecordedCourse;
 use App\Models\Back\RecordedCourseEnrollment;
 use App\Models\Back\RecordedCourseLesson;
@@ -264,16 +263,6 @@ class RecordedCoursesController extends Controller
             ->sortBy('company_name')
             ->values();
 
-        $companyOptions = Company::query()
-            ->where('team_id', $recordedCourse->team_id)
-            ->orderBy('name_ar')
-            ->get(['id', 'name_ar', 'name_en'])
-            ->map(fn ($c) => [
-                'id' => $c->id,
-                'name' => $c->name_ar ?: $c->name_en,
-            ])
-            ->values();
-
         return Inertia::render('Back/Settings/RecordedCourses/Enrollments', [
             'recordedCourse' => $this->courseSummary($recordedCourse),
             'readiness' => $this->readiness($recordedCourse),
@@ -284,7 +273,6 @@ class RecordedCoursesController extends Controller
             ]),
             'enrollments' => $enrollments,
             'companySummaries' => $companySummaries,
-            'companies' => $companyOptions,
             'canApproveCertificates' => auth()->user()->can('approve-recorded-course-certificates'),
             'initialFilterCompanyId' => request()->query('company_id'),
         ]);

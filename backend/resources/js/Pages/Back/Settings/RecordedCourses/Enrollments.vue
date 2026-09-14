@@ -69,16 +69,12 @@
             <label class="block text-sm font-medium text-gray-700 mb-1">
               {{ $t("words.company") }}
             </label>
-            <select
-              v-model="bulkCompanyId"
-              class="w-full border-gray-300 rounded-md shadow-sm text-sm"
-              @change="loadCompanyTrainees"
-            >
-              <option value="">{{ $t("words.please-select") }}</option>
-              <option v-for="c in companies" :key="c.id" :value="c.id">
-                {{ c.name }}
-              </option>
-            </select>
+            <company-search-select
+              :value="selectedBulkCompany"
+              compact
+              :placeholder="$t('words.please-select')"
+              @input="onBulkCompanySelected"
+            />
           </div>
           <div class="flex items-end gap-2 flex-wrap">
             <button
@@ -294,6 +290,7 @@
 <script>
 import AppLayout from "@/Layouts/AppLayout";
 import BreadcrumbContainer from "@/Components/BreadcrumbContainer";
+import CompanySearchSelect from "@/Components/CompanySearchSelect";
 import RecordedCourseFlash from "@/Components/RecordedCourseFlash";
 import RecordedCourseStepNav from "@/Components/RecordedCourseStepNav";
 import { Inertia } from "@inertiajs/inertia";
@@ -303,6 +300,7 @@ export default {
   components: {
     AppLayout,
     BreadcrumbContainer,
+    CompanySearchSelect,
     RecordedCourseFlash,
     RecordedCourseStepNav,
   },
@@ -312,12 +310,12 @@ export default {
     lessons: { type: Array, default: () => [] },
     enrollments: { type: Array, default: () => [] },
     companySummaries: { type: Array, default: () => [] },
-    companies: { type: Array, default: () => [] },
     canApproveCertificates: { type: Boolean, default: false },
     initialFilterCompanyId: { type: String, default: "" },
   },
   data() {
     return {
+      selectedBulkCompany: null,
       bulkCompanyId: "",
       companyTrainees: [],
       selectedTraineeIds: [],
@@ -383,6 +381,11 @@ export default {
     },
     toggleCompanyFilter(companyId) {
       this.filterCompanyId = this.filterCompanyId === companyId ? "" : companyId;
+    },
+    onBulkCompanySelected(company) {
+      this.selectedBulkCompany = company;
+      this.bulkCompanyId = company && company.id ? company.id : "";
+      this.loadCompanyTrainees();
     },
     selectAllNotEnrolled() {
       this.selectedTraineeIds = this.companyTrainees
