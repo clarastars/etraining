@@ -122,7 +122,7 @@ export default {
     breadcrumbs() {
       return [
         { title: "dashboard", link: this.route("dashboard") },
-        { title: "settings", link: this.route("back.settings") },
+        { title: "training-disclosure", link: this.route("back.training-disclosure.index") },
         {
           title: "recorded-courses",
           link: this.route("back.settings.recorded-courses.index"),
@@ -169,7 +169,7 @@ export default {
         {
           id: "enrollments",
           title: this.$t("words.recorded-course-step-enrollments"),
-          description: this.$t("words.recorded-course-enrollments-hint-from-trainee"),
+          description: this.$t("words.recorded-course-company-manage-intro"),
           complete: (this.readiness.enrollments_count || 0) > 0,
           href: this.route("back.settings.recorded-courses.enrollments.index", id),
           meta: this.enrollmentsMeta,

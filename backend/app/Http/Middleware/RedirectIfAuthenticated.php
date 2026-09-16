@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Providers\RouteServiceProvider;
+use App\Support\ChatAppMode;
 use Closure;
 use Illuminate\Support\Facades\Auth;
 
@@ -22,6 +23,10 @@ class RedirectIfAuthenticated
 
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
+                if (ChatAppMode::isActive($request)) {
+                    return redirect(ChatAppMode::homePath());
+                }
+
                 return redirect(RouteServiceProvider::HOME);
             }
         }

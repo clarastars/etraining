@@ -24,6 +24,7 @@ use App\Support\WhatsAppBotPause;
 use App\Support\WhatsAppBotStatus;
 use App\Support\WhatsAppConversationHandoff;
 use App\Support\WhatsAppConversationSync;
+use App\Support\WhatsAppConversationTrainee;
 use App\Support\WhatsAppMessagingWindow;
 use App\Support\WhatsAppTraineeLinker;
 use Carbon\Carbon;
@@ -78,7 +79,7 @@ class ChatController extends Controller
             ->with([
                 'agents:id,name',
                 'tags:id,name,color',
-                'trainee:id,name,phone,identity_number,company_id',
+                'trainee' => WhatsAppConversationTrainee::eagerLoadConstraint(),
                 'trainee.company' => $this->companyRelationConstraint(),
             ])
             ->where('status', $status)
@@ -90,9 +91,12 @@ class ChatController extends Controller
             $query->where(function ($builder) use ($search) {
                 $builder->where('phone', 'LIKE', '%' . $search . '%')
                     ->orWhereHas('trainee', function ($traineeQuery) use ($search) {
-                        $traineeQuery->where('name', 'LIKE', '%' . $search . '%')
-                            ->orWhere('phone', 'LIKE', '%' . $search . '%')
-                            ->orWhere('identity_number', 'LIKE', '%' . $search . '%');
+                        $traineeQuery->withTrashed()
+                            ->where(function ($inner) use ($search) {
+                                $inner->where('name', 'LIKE', '%' . $search . '%')
+                                    ->orWhere('phone', 'LIKE', '%' . $search . '%')
+                                    ->orWhere('identity_number', 'LIKE', '%' . $search . '%');
+                            });
                     });
             });
         }
@@ -122,7 +126,7 @@ class ChatController extends Controller
         if (! empty($validated['company_ids'])) {
             $companyIds = array_values(array_unique($validated['company_ids']));
             $query->whereHas('trainee', function ($traineeQuery) use ($companyIds) {
-                $traineeQuery->whereIn('company_id', $companyIds);
+                $traineeQuery->withTrashed()->whereIn('company_id', $companyIds);
             });
         }
 
@@ -893,11 +897,13 @@ class ChatController extends Controller
                 })
                 ->first();
 
-        $isSuspended = ! is_null($model->suspended_at) || $model->trashed();
-        $isBlocked = $blockList !== null;
-        $reason = $isSuspended
-            ? (string) ($model->deleted_remark ?? '')
-            : ($isBlocked ? (string) ($blockList->reason ?? '') : null);
+        $isSuspended = ! is_null($model->suspended_at);
+        $isBlocked = ($model->trashed() && ! $isSuspended) || ($blockList !== null && ! $isSuspended);
+        $deletedRemark = trim((string) ($model->deleted_remark ?? ''));
+        $blockListReason = $blockList ? trim((string) ($blockList->reason ?? '')) : '';
+        $reason = $deletedRemark !== ''
+            ? $deletedRemark
+            : ($blockListReason !== '' ? $blockListReason : '');
 
         $invoiceColumns = [
             'id',
@@ -1425,10 +1431,7 @@ class ChatController extends Controller
     private function formatConversation(WhatsAppConversation $conversation, $authId = null, ?int $unpaidInvoiceCount = null): array
     {
         WhatsAppTraineeLinker::attachTraineeIfMissing($conversation);
-        $conversation->loadMissing([
-            'trainee:id,name,phone,identity_number,company_id',
-            'trainee.company' => $this->companyRelationConstraint(),
-        ]);
+        WhatsAppConversationTrainee::loadOnto($conversation, $this->companyRelationConstraint());
 
         $company = $conversation->trainee
             ? $this->resolveCompanyForTrainee($conversation->trainee)
@@ -1444,17 +1447,13 @@ class ChatController extends Controller
             'id' => $conversation->id,
             'phone' => $conversation->phone,
             'status' => $conversation->status ?: WhatsAppConversation::STATUS_OPEN,
-            'trainee' => $conversation->trainee ? [
-                'id' => $conversation->trainee->id,
-                'name' => $conversation->trainee->name,
-                'phone' => $conversation->trainee->phone,
-                'identity_number' => $conversation->trainee->identity_number,
-                'company_name' => $this->companyDisplayName($company),
-                'company_show_url' => $conversation->trainee->company_id
+            'trainee' => WhatsAppConversationTrainee::format(
+                $conversation->trainee,
+                $this->companyDisplayName($company),
+                $conversation->trainee && $conversation->trainee->company_id
                     ? route('back.companies.show', $conversation->trainee->company_id)
                     : null,
-                'show_url' => route('back.trainees.show', $conversation->trainee->id),
-            ] : null,
+            ),
             'last_message' => [
                 'body' => $conversation->last_message_body,
                 'direction' => $conversation->last_message_direction,

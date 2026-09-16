@@ -128,16 +128,45 @@ const routeFallbacks = {
     'back.chat.company-filters': '/back/chat/company-filters',
     'back.chat.company-filters.update': '/back/chat/company-filters',
     'back.chat.company-filters.clear': '/back/chat/company-filters',
+    'back.training-disclosure.index': '/back/training-disclosure',
 };
 
 function mergeZiggyRoutes(ziggy) {
-    if (!ziggy || !ziggy.namedRoutes || typeof window.Ziggy === 'undefined') {
+    if (!ziggy || typeof window.Ziggy === 'undefined') {
+        return;
+    }
+
+    // @routes uses { namedRoutes }. Inertia shares RoutePayload::compile() as a
+    // flat { "route.name": { uri, methods, ... }, ... } collection/object.
+    let routeMap = null;
+    if (ziggy.namedRoutes && typeof ziggy.namedRoutes === 'object') {
+        routeMap = ziggy.namedRoutes;
+    } else if (ziggy.routes && typeof ziggy.routes === 'object') {
+        routeMap = ziggy.routes;
+    } else if (typeof ziggy === 'object') {
+        const metaKeys = {
+            url: true,
+            baseUrl: true,
+            baseProtocol: true,
+            baseDomain: true,
+            basePort: true,
+            defaultParameters: true,
+            namedRoutes: true,
+            routes: true,
+        };
+        const entries = Object.keys(ziggy).filter((key) => !metaKeys[key]);
+        if (entries.length > 0 && ziggy[entries[0]] && ziggy[entries[0]].uri) {
+            routeMap = ziggy;
+        }
+    }
+
+    if (!routeMap) {
         return;
     }
 
     window.Ziggy.namedRoutes = {
         ...window.Ziggy.namedRoutes,
-        ...ziggy.namedRoutes,
+        ...routeMap,
     };
 
     if (ziggy.url) {

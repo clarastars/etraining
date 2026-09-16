@@ -1,0 +1,4 @@
+storeFile=etraining-chat.jks
+storePassword=CHANGE_ME
+keyAlias=etraining-chat
+keyPassword=CHANGE_ME

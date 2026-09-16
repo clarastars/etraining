@@ -8,6 +8,7 @@ use App\Models\Back\Company;
 use App\Models\Back\CompanyAttendanceReport;
 use App\Models\Back\CompanyMail;
 use App\Models\Back\JasarahCenterCertificateRow;
+use App\Models\Back\RecordedCourseEnrollment;
 use App\Models\Back\UkCertificateRow;
 use App\Services\CompaniesService;
 use Illuminate\Http\Request;
@@ -207,8 +208,53 @@ class MailController extends Controller
             return response()->json(['success' => true, 'jasarah_center_certificate_row_id' => $rowId]);
         }
 
+        if (array_key_exists('recorded_course_enrollment_id', $eventData['user-variables'] ?? [])) {
+            $enrollmentId = $eventData['user-variables']['recorded_course_enrollment_id'];
+            $enrollment = RecordedCourseEnrollment::query()
+                ->with('trainee')
+                ->find($enrollmentId);
+
+            if ($enrollment) {
+                $traineeEmail = $enrollment->trainee->email ?? null;
+                $currentRecipient = $eventData['recipient'] ?? null;
+
+                if ($traineeEmail && $currentRecipient === $traineeEmail) {
+                    $messageId = Arr::get($eventData, 'message.headers.message-id')
+                        ?? Arr::get($eventData, 'message.headers.Message-Id')
+                        ?? Arr::get($eventData, 'Message-Id');
+
+                    if ($eventData['event'] === 'delivered') {
+                        $enrollment->update([
+                            'delivery_status' => 'delivered',
+                            'delivered_at' => now(),
+                            'mailgun_message_id' => $enrollment->mailgun_message_id ?: $messageId,
+                            'certificate_status' => RecordedCourseEnrollment::CERTIFICATE_STATUS_SENT,
+                            'certificate_sent_at' => $enrollment->certificate_sent_at ?: now(),
+                        ]);
+                    } elseif (in_array($eventData['event'], ['failed', 'bounced', 'complained'], true)) {
+                        $reason = match ($eventData['event']) {
+                            'bounced' => 'Email bounced: ' . (Arr::get($eventData, 'delivery-status.message', 'Unknown bounce reason')),
+                            'complained' => 'Email marked as spam/complaint',
+                            default => Arr::get($eventData, 'delivery-status.message', 'Unknown delivery failure'),
+                        };
+
+                        $enrollment->update([
+                            'delivery_status' => 'failed',
+                            'failed_at' => now(),
+                            'delivery_failure_reason' => $reason,
+                            'mailgun_message_id' => $enrollment->mailgun_message_id ?: $messageId,
+                            'certificate_status' => RecordedCourseEnrollment::CERTIFICATE_STATUS_FAILED,
+                        ]);
+                    }
+                }
+            }
+
+            return response()->json(['success' => true, 'recorded_course_enrollment_id' => $enrollmentId]);
+        }
+
         if (!array_key_exists('uk_certificate_row_id', $eventData['user-variables'] ?? [])
-            && !array_key_exists('jasarah_center_certificate_row_id', $eventData['user-variables'] ?? [])) {
+            && !array_key_exists('jasarah_center_certificate_row_id', $eventData['user-variables'] ?? [])
+            && !array_key_exists('recorded_course_enrollment_id', $eventData['user-variables'] ?? [])) {
             Log::info('Certificate tracking: No certificate row id found in user-variables', [
                 'user_variables' => $eventData['user-variables'] ?? 'not_found',
                 'event' => $eventData['event'],

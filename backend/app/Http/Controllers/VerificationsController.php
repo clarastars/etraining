@@ -8,6 +8,7 @@ use App\Jobs\SendEmailVerification;
 use App\Models\User;
 use App\Models\Verification;
 use App\Services\TwilioVerifyService;
+use App\Support\ChatAppMode;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use RuntimeException;
@@ -112,6 +113,11 @@ class VerificationsController extends Controller
 
         if ($verified) {
             auth()->login($user);
+
+            if (ChatAppMode::isActive($request)) {
+                return redirect(ChatAppMode::homePath());
+            }
+
             return redirect()->route('dashboard');
         }
 

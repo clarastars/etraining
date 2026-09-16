@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Listeners\UpdateUsersTimezoneSafely;
 use App\Notifications\MsegatChannel;
+use App\Support\ChatAppMode;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\ServiceProvider;
 use Inertia\Inertia;
@@ -54,6 +55,9 @@ class AppServiceProvider extends ServiceProvider
             },
             'ziggy' => function () {
                 return \Tightenco\Ziggy\RoutePayload::compile(app('router'));
+            },
+            'chatAppMode' => function () {
+                return ChatAppMode::isActive(request());
             },
         ]);
     }

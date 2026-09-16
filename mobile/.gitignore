@@ -1,0 +1,13 @@
+node_modules/
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+android/captures/
+dist/
+signing/*.jks
+signing/*.keystore
+signing/key.properties
+.idea/
+*.iml
+.DS_Store

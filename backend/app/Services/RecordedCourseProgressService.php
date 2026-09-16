@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Models\Back\RecordedCourse;
 use App\Models\Back\RecordedCourseEnrollment;
 use App\Models\Back\RecordedCourseLesson;
 use App\Models\Back\RecordedCourseLessonProgress;
@@ -20,9 +21,20 @@ class RecordedCourseProgressService
      *
      * @return Collection<int, RecordedCourseLesson>
      */
+    public function courseForEnrollment(RecordedCourseEnrollment $enrollment): RecordedCourse
+    {
+        if ($enrollment->relationLoaded('recordedCourse') && $enrollment->recordedCourse !== null) {
+            return $enrollment->recordedCourse;
+        }
+
+        return RecordedCourse::query()
+            ->withoutGlobalScopes()
+            ->findOrFail($enrollment->recorded_course_id);
+    }
+
     public function orderedLessons(RecordedCourseEnrollment $enrollment): Collection
     {
-        return $enrollment->recordedCourse
+        return $this->courseForEnrollment($enrollment)
             ->lessons()
             ->orderBy('sort_order')
             ->get();
@@ -54,7 +66,7 @@ class RecordedCourseProgressService
 
     public function canShowUnlockButton(RecordedCourseEnrollment $enrollment, Carbon $now): bool
     {
-        $course = $enrollment->recordedCourse;
+        $course = $this->courseForEnrollment($enrollment);
         $allowed = $course->allowed_weekdays ?? [];
 
         if ($allowed === [] || ! in_array($now->dayOfWeek, $allowed, true)) {
@@ -156,7 +168,45 @@ class RecordedCourseProgressService
         $progress->completed_at = $now;
         $progress->save();
 
+        $this->refreshEnrollmentCompletion($enrollment, $now);
+
         return $progress->fresh();
+    }
+
+    /**
+     * When every lesson has completed_at, mark enrollment completed and pending certificate approval.
+     */
+    public function refreshEnrollmentCompletion(RecordedCourseEnrollment $enrollment, Carbon $now): void
+    {
+        $lessons = $this->orderedLessons($enrollment);
+        if ($lessons->isEmpty()) {
+            return;
+        }
+
+        foreach ($lessons as $lesson) {
+            $progress = $this->progressForLesson($enrollment, $lesson);
+            if ($progress === null || $progress->completed_at === null) {
+                return;
+            }
+        }
+
+        $updates = [];
+        if ($enrollment->completed_at === null) {
+            $updates['completed_at'] = $now;
+        }
+
+        if (in_array($enrollment->certificate_status, [
+            RecordedCourseEnrollment::CERTIFICATE_STATUS_NONE,
+            null,
+            '',
+        ], true)) {
+            $updates['certificate_status'] = RecordedCourseEnrollment::CERTIFICATE_STATUS_PENDING_APPROVAL;
+        }
+
+        if ($updates !== []) {
+            $enrollment->fill($updates);
+            $enrollment->save();
+        }
     }
 
     public function canStreamLesson(

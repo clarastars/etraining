@@ -12,7 +12,7 @@ return [
      * The maximum file size of an item in bytes.
      * Adding a larger file will result in an exception.
      */
-    'max_file_size' => 1024 * 1024 * 500, // 500MB
+    'max_file_size' => 1024 * 1024 * 1024 * 5, // 5GB (recorded course session videos)
 
     /*
      * This queue will be used to generate derived and responsive images.

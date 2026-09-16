@@ -7,6 +7,7 @@
 - **Run Single Test**: `php artisan test --filter <TestName>` or `vendor/bin/phpunit tests/Feature/CompaniesTest.php`.
 - **Localization (i18n)**: After adding translation keys, ensure they exist in both Arabic and English, then run `php artisan vue-i18n:generate`.
 - **Frontend Build**: `npm run dev` / `npm run prod` inside `backend/` (requires `NODE_OPTIONS=--openssl-legacy-provider`).
+- **Training disclosure Drive import**: Share the parent Drive folder with `GOOGLE_DRIVE_CLIENT_EMAIL`, set `TRAINING_DISCLOSURE_DEFAULT_TEAM_ID` (or pass `--team=`), ensure S3 is configured, then from `backend/`: `php artisan recorded-courses:import-from-drive` (use `--dry-run` first). Direct videos and videos inside `.zip` archives are extracted and stored on the `s3` disk.
 
 ## Architecture & Conventions
 - **Tech Stack**: Laravel 8 (PHP 8.0+), Inertia.js, Vue 2, Tailwind CSS, MySQL/MariaDB, Redis.

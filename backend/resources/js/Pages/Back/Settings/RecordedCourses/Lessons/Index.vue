@@ -235,7 +235,7 @@ export default {
     breadcrumbs() {
       return [
         { title: "dashboard", link: this.route("dashboard") },
-        { title: "settings", link: this.route("back.settings") },
+        { title: "training-disclosure", link: this.route("back.training-disclosure.index") },
         {
           title: "recorded-courses",
           link: this.route("back.settings.recorded-courses.index"),

@@ -41,6 +41,30 @@ Route::prefix('ar/uploaded-courses')->name('uploaded-courses.')->group(function 
         ->name('stream');
 });
 
+// Passwordless recorded-course access (per-employee disclosure links)
+Route::prefix('ar/recorded-courses/access')->name('recorded-courses.public.')->group(function () {
+    Route::get('{token}', [\App\Http\Controllers\PublicRecordedCourseAccessController::class, 'show'])
+        ->where('token', '[A-Za-z0-9]+')
+        ->name('show');
+    Route::post('{token}/check-in', [\App\Http\Controllers\PublicRecordedCourseAccessController::class, 'checkIn'])
+        ->where('token', '[A-Za-z0-9]+')
+        ->name('check-in');
+    Route::post('{token}/check-out', [\App\Http\Controllers\PublicRecordedCourseAccessController::class, 'checkOut'])
+        ->where('token', '[A-Za-z0-9]+')
+        ->name('check-out');
+    Route::post('{token}/unlock', [\App\Http\Controllers\PublicRecordedCourseAccessController::class, 'unlock'])
+        ->where('token', '[A-Za-z0-9]+')
+        ->name('unlock');
+    Route::post('{token}/lessons/{lesson}/complete', [\App\Http\Controllers\PublicRecordedCourseAccessController::class, 'complete'])
+        ->where('token', '[A-Za-z0-9]+')
+        ->whereUuid('lesson')
+        ->name('complete');
+    Route::get('{token}/lessons/{lesson}/stream', [\App\Http\Controllers\PublicRecordedCourseAccessController::class, 'stream'])
+        ->where('token', '[A-Za-z0-9]+')
+        ->whereUuid('lesson')
+        ->name('stream');
+});
+
 Route::get('/qr1', function() {
     return redirect('https://forms.gle/t9nhZgKqz5za9xmp9');
 });
@@ -705,6 +729,8 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function() {
         Route::post('/settings/recruitment-companies/store', [\App\Http\Controllers\Back\RecruitmentCompaniesController::class, 'store'])->name('settings.recruitment-companies.store');
         Route::delete('/settings/recruitment-companies/{id}', [\App\Http\Controllers\Back\RecruitmentCompaniesController::class, 'destroy'])->name('settings.recruitment-companies.destroy');
 
+        Route::get('/training-disclosure', [\App\Http\Controllers\Back\TrainingDisclosureController::class, 'index'])->name('training-disclosure.index');
+
         Route::get('/settings/recorded-courses', [\App\Http\Controllers\Back\RecordedCoursesController::class, 'index'])->name('settings.recorded-courses.index');
         Route::get('/settings/recorded-courses/create', [\App\Http\Controllers\Back\RecordedCoursesController::class, 'create'])->name('settings.recorded-courses.create');
         Route::post('/settings/recorded-courses', [\App\Http\Controllers\Back\RecordedCoursesController::class, 'store'])->name('settings.recorded-courses.store');
@@ -717,7 +743,11 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function() {
         Route::get('/settings/recorded-courses/{recorded_course}/schedule', [\App\Http\Controllers\Back\RecordedCoursesController::class, 'editSchedule'])->name('settings.recorded-courses.schedule.edit');
         Route::put('/settings/recorded-courses/{recorded_course}/schedule', [\App\Http\Controllers\Back\RecordedCoursesController::class, 'updateSchedule'])->name('settings.recorded-courses.schedule.update');
         Route::get('/settings/recorded-courses/{recorded_course}/enrollments', [\App\Http\Controllers\Back\RecordedCoursesController::class, 'enrollments'])->name('settings.recorded-courses.enrollments.index');
+        Route::get('/settings/recorded-courses/{recorded_course}/enrollments/company-trainees', [\App\Http\Controllers\Back\RecordedCourseEnrollmentsController::class, 'companyTrainees'])->name('settings.recorded-courses.enrollments.company-trainees');
         Route::post('/settings/recorded-courses/{recorded_course}/enrollments', [\App\Http\Controllers\Back\RecordedCourseEnrollmentsController::class, 'store'])->name('settings.recorded-courses.enrollments.store');
+        Route::post('/settings/recorded-courses/{recorded_course}/enrollments/bulk', [\App\Http\Controllers\Back\RecordedCourseEnrollmentsController::class, 'bulkStore'])->name('settings.recorded-courses.enrollments.bulk');
+        Route::post('/settings/recorded-courses/{recorded_course}/enrollments/{enrollment}/resend-access-link', [\App\Http\Controllers\Back\RecordedCourseEnrollmentsController::class, 'resendAccessLink'])->name('settings.recorded-courses.enrollments.resend-access-link');
+        Route::post('/settings/recorded-courses/{recorded_course}/enrollments/{enrollment}/approve-certificate', [\App\Http\Controllers\Back\RecordedCourseEnrollmentsController::class, 'approveCertificate'])->name('settings.recorded-courses.enrollments.approve-certificate');
         Route::get('/settings/recorded-courses/{recorded_course}/lessons', [\App\Http\Controllers\Back\RecordedCourseLessonsController::class, 'index'])->name('settings.recorded-courses.lessons.index');
         Route::post('/settings/recorded-courses/{recorded_course}/lessons', [\App\Http\Controllers\Back\RecordedCourseLessonsController::class, 'store'])->name('settings.recorded-courses.lessons.store');
         Route::put('/settings/recorded-courses/{recorded_course}/lessons/{lesson}', [\App\Http\Controllers\Back\RecordedCourseLessonsController::class, 'update'])->name('settings.recorded-courses.lessons.update');

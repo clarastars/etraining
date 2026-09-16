@@ -282,12 +282,12 @@ export default {
         if (this.company.id) {
             this.form.company_id = this.company.id;
 
-            // TO: Prefer last resignation recipients, otherwise use the company email
-            if (this.company.resignations.length && this.company.resignations[0].emails_to) {
-                this.form.emails_to = this.normalizeEmailString(this.company.resignations[0].emails_to);
-            } else if (this.company.email) {
-                this.form.emails_to = this.normalizeEmailString(this.company.email);
-            }
+            // TO: Merge company profile, salesperson, and latest resignation recipients
+            this.form.emails_to = this.mergeEmailStrings(
+                this.company.email,
+                this.company.salesperson_email,
+                this.company.resignations.length ? this.company.resignations[0].emails_to : ''
+            );
 
             // CC and BCC: Always use default emails from settings (not from last resignation)
             this.form.emails_cc = this.normalizeEmailString(this.default_cc_emails);
@@ -309,6 +309,25 @@ export default {
                 .map((email) => email.trim())
                 .filter(Boolean)
                 .join(', ');
+        },
+        mergeEmailStrings(...values) {
+            const seen = new Set();
+            const emails = [];
+
+            values.forEach((value) => {
+                this.normalizeEmailString(value)
+                    .split(', ')
+                    .filter(Boolean)
+                    .forEach((email) => {
+                        const key = email.toLowerCase();
+                        if (!seen.has(key)) {
+                            seen.add(key);
+                            emails.push(email);
+                        }
+                    });
+            });
+
+            return emails.join(', ');
         },
         triggerSearching() {
             if (this.searchString) {

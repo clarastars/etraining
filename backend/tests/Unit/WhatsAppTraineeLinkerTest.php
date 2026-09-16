@@ -88,6 +88,92 @@ class WhatsAppTraineeLinkerTest extends BaseTestCase
         $this->assertSame($trainee->id, $conversation->trainee->id);
     }
 
+    public function test_attach_trainee_if_missing_loads_soft_deleted_trainee(): void
+    {
+        $trainee = $this->makeTrainee('0512345678');
+        $trainee->deleted_remark = 'non-payment';
+        $trainee->suspended_at = now();
+        $trainee->save();
+        $trainee->delete();
+
+        $conversation = WhatsAppConversation::query()->create([
+            'id' => (string) Str::uuid(),
+            'phone' => $this->conversationPhone,
+            'trainee_id' => $trainee->id,
+            'status' => WhatsAppConversation::STATUS_OPEN,
+        ]);
+
+        WhatsAppTraineeLinker::attachTraineeIfMissing($conversation);
+
+        $this->assertTrue($conversation->relationLoaded('trainee'));
+        $this->assertNotNull($conversation->trainee);
+        $this->assertSame($trainee->id, $conversation->trainee->id);
+        $this->assertTrue($conversation->trainee->trashed());
+        $this->assertSame('non-payment', $conversation->trainee->deleted_remark);
+    }
+
+    public function test_attach_trainee_if_missing_links_soft_deleted_trainee_by_local_phone_format(): void
+    {
+        $trainee = $this->makeTrainee('0533898058');
+        $trainee->deleted_remark = 'استبعاد';
+        $trainee->suspended_at = now();
+        $trainee->save();
+        $trainee->delete();
+
+        $conversation = WhatsAppConversation::query()->create([
+            'id' => (string) Str::uuid(),
+            'phone' => '+966533898058',
+            'trainee_id' => null,
+            'status' => WhatsAppConversation::STATUS_OPEN,
+        ]);
+
+        WhatsAppTraineeLinker::attachTraineeIfMissing($conversation);
+
+        $this->assertSame($trainee->id, $conversation->fresh()->trainee_id);
+        $this->assertTrue($conversation->relationLoaded('trainee'));
+        $this->assertNotNull($conversation->trainee);
+        $this->assertTrue($conversation->trainee->trashed());
+        $this->assertSame('استبعاد', $conversation->trainee->deleted_remark);
+    }
+
+    public function test_attach_trainee_if_missing_prefers_active_trainee_over_soft_deleted(): void
+    {
+        $deleted = $this->makeTrainee('0533898058');
+        $deleted->delete();
+
+        $active = $this->makeTrainee('0533898058');
+
+        $conversation = WhatsAppConversation::query()->create([
+            'id' => (string) Str::uuid(),
+            'phone' => '+966533898058',
+            'trainee_id' => null,
+            'status' => WhatsAppConversation::STATUS_OPEN,
+        ]);
+
+        WhatsAppTraineeLinker::attachTraineeIfMissing($conversation);
+
+        $this->assertSame($active->id, $conversation->fresh()->trainee_id);
+        $this->assertFalse($conversation->trainee->trashed());
+    }
+
+    public function test_attach_trainee_if_missing_links_via_phone_additional(): void
+    {
+        $trainee = $this->makeTrainee('0599999999');
+        $trainee->phone_additional = '0533898058';
+        $trainee->save();
+
+        $conversation = WhatsAppConversation::query()->create([
+            'id' => (string) Str::uuid(),
+            'phone' => '+966533898058',
+            'trainee_id' => null,
+            'status' => WhatsAppConversation::STATUS_OPEN,
+        ]);
+
+        WhatsAppTraineeLinker::attachTraineeIfMissing($conversation);
+
+        $this->assertSame($trainee->id, $conversation->fresh()->trainee_id);
+    }
+
     public function test_does_not_steal_conversation_already_linked_to_another_trainee(): void
     {
         $existingTrainee = $this->makeTrainee('0599999999');
@@ -131,8 +217,12 @@ class WhatsAppTraineeLinkerTest extends BaseTestCase
             $table->uuid('id')->primary();
             $table->string('name')->nullable();
             $table->string('phone')->nullable();
+            $table->string('phone_additional')->nullable();
+            $table->string('identity_number')->nullable();
             $table->uuid('team_id')->nullable();
             $table->uuid('company_id')->nullable();
+            $table->timestamp('suspended_at')->nullable();
+            $table->string('deleted_remark')->nullable();
             $table->softDeletes();
             $table->timestamps();
         });
