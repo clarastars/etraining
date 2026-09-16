@@ -356,6 +356,34 @@
                                   :options="dropzoneOptionsBankAccount"
                     ></vue-dropzone>
                 </div>
+
+                <div class="md:col-span-3 lg:col-span-1 sm:col-span-3" v-if="canViewSpecialDocuments">
+                    <jet-label :value="$t('words.gosi-certificate')" class="mb-2" />
+
+                    <div class="bg-white border-2 rounder-lg flex flex-col justify-center items-center min-container-upload" v-if="trainee.gosi_certificate_copy_url">
+                        <a class="bg-gray-700 text-white font-semibold p-2 text-center w-1/2 rounded my-1" target="_blank" :href="trainee.gosi_certificate_copy_url">{{ $t('words.download') }}</a>
+                        <button class="bg-red-500 text-white font-semibold p-2 text-center w-1/2 rounded my-1" @click="deleteGosiCertificate">{{ $t('words.delete') }}</button>
+                    </div>
+                    <vue-dropzone v-else
+                                  id="dropzoneGosiCertificate"
+                                  @vdropzone-sending="sendingCsrf"
+                                  :options="dropzoneOptionsGosiCertificate"
+                    ></vue-dropzone>
+                </div>
+
+                <div class="md:col-span-3 lg:col-span-1 sm:col-span-3" v-if="canViewSpecialDocuments">
+                    <jet-label :value="$t('words.qiwa-contract')" class="mb-2" />
+
+                    <div class="bg-white border-2 rounder-lg flex flex-col justify-center items-center min-container-upload" v-if="trainee.qiwa_contract_copy_url">
+                        <a class="bg-gray-700 text-white font-semibold p-2 text-center w-1/2 rounded my-1" target="_blank" :href="trainee.qiwa_contract_copy_url">{{ $t('words.download') }}</a>
+                        <button class="bg-red-500 text-white font-semibold p-2 text-center w-1/2 rounded my-1" @click="deleteQiwaContract">{{ $t('words.delete') }}</button>
+                    </div>
+                    <vue-dropzone v-else
+                                  id="dropzoneQiwaContract"
+                                  @vdropzone-sending="sendingCsrf"
+                                  :options="dropzoneOptionsQiwaContract"
+                    ></vue-dropzone>
+                </div>
             </div>
 
             <jet-section-border></jet-section-border>
@@ -518,9 +546,29 @@
                     thumbnailWidth: 150,
                     maxFilesize: 20,
                 },
+                dropzoneOptionsGosiCertificate: {
+                    destroyDropzone: false,
+                    url: route('back.trainees.attachments.gosi-certificate', {trainee_id: this.trainee.id}),
+                    dictDefaultMessage: `<ion-icon name='cloud-upload-outline' class='text-red-500' size='large'></ion-icon><br/> ${this.$t('words.upload-files-here')}`,
+                    thumbnailWidth: 150,
+                    maxFilesize: 20,
+                },
+                dropzoneOptionsQiwaContract: {
+                    destroyDropzone: false,
+                    url: route('back.trainees.attachments.qiwa-contract', {trainee_id: this.trainee.id}),
+                    dictDefaultMessage: `<ion-icon name='cloud-upload-outline' class='text-red-500' size='large'></ion-icon><br/> ${this.$t('words.upload-files-here')}`,
+                    thumbnailWidth: 150,
+                    maxFilesize: 20,
+                },
             }
         },
         computed: {
+            canViewSpecialDocuments() {
+                const currentUserEmail = this.$page.props.user?.email;
+                const allowedUsers = this.$page.props.allowed_users_for_special_documents || [];
+
+                return allowedUsers.includes(currentUserEmail);
+            },
             canViewCertificates() {
                 // Check if user has permission 'override-training-costs'
                 const permissions = document.head.querySelector('meta[name="user-permissions"]');
@@ -686,6 +734,16 @@
             deleteBankAccount() {
                 if (confirm(this.$t('words.are-you-sure'))) {
                     this.$inertia.delete(route('back.trainees.attachments.bank-account.destroy', {trainee_id: this.trainee.id}));
+                }
+            },
+            deleteGosiCertificate() {
+                if (confirm(this.$t('words.are-you-sure'))) {
+                    this.$inertia.delete(route('back.trainees.attachments.gosi-certificate.destroy', {trainee_id: this.trainee.id}));
+                }
+            },
+            deleteQiwaContract() {
+                if (confirm(this.$t('words.are-you-sure'))) {
+                    this.$inertia.delete(route('back.trainees.attachments.qiwa-contract.destroy', {trainee_id: this.trainee.id}));
                 }
             },
             unblock() {

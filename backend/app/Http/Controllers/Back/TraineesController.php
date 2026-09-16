@@ -742,7 +742,7 @@ class TraineesController extends Controller
             'file' => 'required_without:gosi_certificate',
         ]);
 
-        $trainee = Trainee::findOrFail($trainee_id);
+        $trainee = Trainee::withTrashed()->findOrFail($trainee_id);
         $file = $request->file('gosi_certificate') ?: $request->file('file');
         $uploaded_file = $trainee->uploadToFolder($file, 'gosi-certificate');
 
@@ -764,10 +764,10 @@ class TraineesController extends Controller
      */
     public function deleteGosiCertificate(Request $request, $trainee_id)
     {
-        $trainee = Trainee::findOrFail($trainee_id);
+        $trainee = Trainee::withTrashed()->findOrFail($trainee_id);
         $trainee->deleteMediaCollectionWithAudit('gosi-certificate');
 
-        return response()->redirectToRoute('back.trainees.show', $trainee->id);
+        return response()->redirectTo($trainee->show_url);
     }
 
     /**
@@ -784,7 +784,7 @@ class TraineesController extends Controller
             'file' => 'required_without:qiwa_contract',
         ]);
 
-        $trainee = Trainee::findOrFail($trainee_id);
+        $trainee = Trainee::withTrashed()->findOrFail($trainee_id);
         $file = $request->file('qiwa_contract') ?: $request->file('file');
         $uploaded_file = $trainee->uploadToFolder($file, 'qiwa-contract');
 
@@ -806,10 +806,10 @@ class TraineesController extends Controller
      */
     public function deleteQiwaContract(Request $request, $trainee_id)
     {
-        $trainee = Trainee::findOrFail($trainee_id);
+        $trainee = Trainee::withTrashed()->findOrFail($trainee_id);
         $trainee->deleteMediaCollectionWithAudit('qiwa-contract');
 
-        return response()->redirectToRoute('back.trainees.show', $trainee->id);
+        return response()->redirectTo($trainee->show_url);
     }
 
     /**
