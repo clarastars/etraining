@@ -172,11 +172,13 @@ class RecordedCourseLessonsController extends Controller
     {
         $media = $lesson->getFirstMedia(RecordedCourseLesson::VIDEO_COLLECTION);
 
+        $titles = $lesson->displayTitles($course->name_ar ?: $course->name_en);
+
         return [
             'id' => $lesson->id,
             'sort_order' => $lesson->sort_order,
-            'title_ar' => $lesson->title_ar,
-            'title_en' => $lesson->title_en ?? '',
+            'title_ar' => $titles['title_ar'],
+            'title_en' => $titles['title_en'],
             'has_video' => $media !== null,
             'video_file_name' => $media?->name,
             'video_mime_type' => $media?->mime_type,

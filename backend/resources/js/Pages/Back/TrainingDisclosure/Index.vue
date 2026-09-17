@@ -29,7 +29,23 @@
         </div>
       </div>
 
-      <div class="grid gap-4 sm:grid-cols-2 mb-10">
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-10">
+        <inertia-link
+          :href="route('back.training-disclosure.requests.index')"
+          class="block p-5 bg-white rounded-lg shadow border border-indigo-200 hover:border-indigo-400 hover:shadow-md transition"
+        >
+          <h2 class="font-semibold text-gray-900 mb-1">
+            {{ $t("words.training-disclosure-requests") }}
+          </h2>
+          <p class="text-sm text-gray-600 mb-2">
+            {{ $t("words.training-disclosure-requests-help") }}
+          </p>
+          <p class="text-xs font-medium text-indigo-700">
+            {{ $t("words.training-disclosure-stat-requests") }}:
+            {{ stats.disclosure_requests || 0 }}
+          </p>
+        </inertia-link>
+
         <inertia-link
           :href="route('back.settings.recorded-courses.index')"
           class="block p-5 bg-white rounded-lg shadow border border-gray-200 hover:border-indigo-300 hover:shadow-md transition"
@@ -55,71 +71,38 @@
         </inertia-link>
       </div>
 
-      <div class="grid gap-6 lg:grid-cols-2">
+      <div class="grid gap-6 lg:grid-cols-2 mb-6">
         <section class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
           <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
             <h2 class="font-semibold text-gray-900">
-              {{ $t("words.training-disclosure-courses-list") }}
+              {{ $t("words.training-disclosure-requests") }}
             </h2>
             <inertia-link
               class="text-sm text-indigo-600 hover:underline"
-              :href="route('back.settings.recorded-courses.index')"
+              :href="route('back.training-disclosure.requests.create')"
             >
-              {{ $t("words.manage") }}
+              {{ $t("words.training-disclosure-request-new") }}
             </inertia-link>
           </div>
-          <div v-if="courses.length" class="divide-y divide-gray-100">
-            <div
-              v-for="course in courses"
-              :key="course.id"
-              class="px-5 py-3 flex flex-wrap items-center justify-between gap-3"
+          <div v-if="recentDisclosureRequests.length" class="divide-y divide-gray-100">
+            <inertia-link
+              v-for="row in recentDisclosureRequests"
+              :key="row.id"
+              class="block px-5 py-3 hover:bg-gray-50"
+              :href="route('back.training-disclosure.requests.show', row.id)"
             >
-              <div>
-                <p class="font-medium text-gray-900 flex flex-wrap items-center gap-2">
-                  <span>{{ courseTitle(course) }}</span>
-                  <span
-                    v-if="course.ready"
-                    class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800"
-                  >
-                    {{ $t("words.training-disclosure-ready") }}
-                  </span>
-                  <span
-                    v-else
-                    class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600"
-                  >
-                    {{ $t("words.training-disclosure-not-ready") }}
-                  </span>
-                </p>
-                <p class="text-xs text-gray-500 mt-0.5">
-                  {{ $t("words.recorded-course-videos-ready-count", {
-                    ready: course.lessons_with_video_count,
-                    total: course.lessons_count,
-                  }) }}
-                  ·
-                  {{ $t("words.recorded-course-enrollments-count", { count: course.enrollments_count }) }}
-                  ·
-                  {{ $t("words.training-disclosure-stat-completed") }}:
-                  {{ course.completed_enrollments_count }}
-                  ·
-                  {{ $t("words.training-disclosure-stat-pending") }}:
-                  {{ course.pending_approval_count }}
-                </p>
-              </div>
-              <div class="flex gap-2">
-                <inertia-link
-                  class="text-xs font-medium text-indigo-600 hover:underline"
-                  :href="route('back.settings.recorded-courses.show', course.id)"
-                >
-                  {{ $t("words.recorded-course-manage") }}
-                </inertia-link>
-                <inertia-link
-                  class="text-xs font-medium text-indigo-600 hover:underline"
-                  :href="route('back.settings.recorded-courses.enrollments.index', course.id)"
-                >
-                  {{ $t("words.recorded-course-step-enrollments") }}
-                </inertia-link>
-              </div>
-            </div>
+              <p class="font-medium text-gray-900 flex flex-wrap items-center gap-2">
+                <span class="font-mono text-indigo-700">{{ row.number }}</span>
+                <span>{{ row.company_name }}</span>
+              </p>
+              <p class="text-xs text-gray-500 mt-0.5">
+                {{ $t("words.training-disclosure-request-trainees-count") }}:
+                {{ row.trainees_count }}
+                ·
+                {{ $t("words.training-disclosure-request-draft-count") }}:
+                {{ row.draft_count }}
+              </p>
+            </inertia-link>
           </div>
           <p v-else class="px-5 py-8 text-sm text-gray-500">
             {{ $t("words.nothing-is-here") }}
@@ -169,11 +152,82 @@
         </section>
       </div>
 
+      <section class="mb-6 bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+          <h2 class="font-semibold text-gray-900">
+            {{ $t("words.training-disclosure-courses-list") }}
+          </h2>
+          <inertia-link
+            class="text-sm text-indigo-600 hover:underline"
+            :href="route('back.settings.recorded-courses.index')"
+          >
+            {{ $t("words.manage") }}
+          </inertia-link>
+        </div>
+        <div v-if="courses.length" class="divide-y divide-gray-100">
+          <div
+            v-for="course in courses"
+            :key="course.id"
+            class="px-5 py-3 flex flex-wrap items-center justify-between gap-3"
+          >
+            <div>
+              <p class="font-medium text-gray-900 flex flex-wrap items-center gap-2">
+                <span>{{ courseTitle(course) }}</span>
+                <span
+                  v-if="course.ready"
+                  class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800"
+                >
+                  {{ $t("words.training-disclosure-ready") }}
+                </span>
+                <span
+                  v-else
+                  class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600"
+                >
+                  {{ $t("words.training-disclosure-not-ready") }}
+                </span>
+              </p>
+              <p class="text-xs text-gray-500 mt-0.5">
+                {{ $t("words.recorded-course-videos-ready-count", {
+                  ready: course.lessons_with_video_count,
+                  total: course.lessons_count,
+                }) }}
+                ·
+                {{ $t("words.recorded-course-enrollments-count", { count: course.enrollments_count }) }}
+                ·
+                {{ $t("words.training-disclosure-stat-completed") }}:
+                {{ course.completed_enrollments_count }}
+                ·
+                {{ $t("words.training-disclosure-stat-pending") }}:
+                {{ course.pending_approval_count }}
+              </p>
+            </div>
+            <div class="flex gap-2">
+              <inertia-link
+                class="text-xs font-medium text-indigo-600 hover:underline"
+                :href="route('back.settings.recorded-courses.show', course.id)"
+              >
+                {{ $t("words.recorded-course-manage") }}
+              </inertia-link>
+              <inertia-link
+                class="text-xs font-medium text-indigo-600 hover:underline"
+                :href="route('back.settings.recorded-courses.enrollments.index', course.id)"
+              >
+                {{ $t("words.recorded-course-step-enrollments") }}
+              </inertia-link>
+            </div>
+          </div>
+        </div>
+        <p v-else class="px-5 py-8 text-sm text-gray-500">
+          {{ $t("words.nothing-is-here") }}
+        </p>
+      </section>
+
       <section class="mt-8 bg-white rounded-lg border border-gray-200 shadow-sm p-5">
         <h2 class="font-semibold text-gray-900 mb-3">
           {{ $t("words.training-disclosure-process-title") }}
         </h2>
         <ol class="list-decimal list-inside space-y-2 text-sm text-gray-700">
+          <li>{{ $t("words.training-disclosure-step-0") }}</li>
           <li>{{ $t("words.training-disclosure-step-1") }}</li>
           <li>{{ $t("words.training-disclosure-step-2") }}</li>
           <li>{{ $t("words.training-disclosure-step-3") }}</li>
@@ -200,6 +254,7 @@ export default {
     stats: { type: Object, required: true },
     courses: { type: Array, default: () => [] },
     pendingApprovals: { type: Array, default: () => [] },
+    recentDisclosureRequests: { type: Array, default: () => [] },
     canApproveCertificates: { type: Boolean, default: false },
   },
   computed: {

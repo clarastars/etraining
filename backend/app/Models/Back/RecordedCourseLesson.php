@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models\Back;
 
+use App\Support\RecordedCourseLessonTitle;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -121,5 +122,18 @@ class RecordedCourseLesson extends Model implements HasMedia
     public function getVideoMediaAttribute(): ?Media
     {
         return $this->getFirstMedia(self::VIDEO_COLLECTION);
+    }
+
+    /**
+     * Learner-facing titles with Zoom/Drive numbering and path prefixes removed.
+     *
+     * @return array{title_ar: string, title_en: string}
+     */
+    public function displayTitles(?string $courseName = null): array
+    {
+        return [
+            'title_ar' => RecordedCourseLessonTitle::clean((string) ($this->title_ar ?: $this->title_en), $courseName),
+            'title_en' => RecordedCourseLessonTitle::clean((string) ($this->title_en ?: $this->title_ar), $courseName),
+        ];
     }
 }

@@ -730,6 +730,12 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function() {
         Route::delete('/settings/recruitment-companies/{id}', [\App\Http\Controllers\Back\RecruitmentCompaniesController::class, 'destroy'])->name('settings.recruitment-companies.destroy');
 
         Route::get('/training-disclosure', [\App\Http\Controllers\Back\TrainingDisclosureController::class, 'index'])->name('training-disclosure.index');
+        Route::get('/training-disclosure/requests', [\App\Http\Controllers\Back\TrainingDisclosureRequestsController::class, 'index'])->name('training-disclosure.requests.index');
+        Route::get('/training-disclosure/requests/create', [\App\Http\Controllers\Back\TrainingDisclosureRequestsController::class, 'create'])->name('training-disclosure.requests.create');
+        Route::post('/training-disclosure/requests', [\App\Http\Controllers\Back\TrainingDisclosureRequestsController::class, 'store'])->name('training-disclosure.requests.store');
+        Route::get('/training-disclosure/requests/{trainingDisclosureRequest}', [\App\Http\Controllers\Back\TrainingDisclosureRequestsController::class, 'show'])->name('training-disclosure.requests.show');
+        Route::put('/training-disclosure/requests/{trainingDisclosureRequest}', [\App\Http\Controllers\Back\TrainingDisclosureRequestsController::class, 'update'])->name('training-disclosure.requests.update');
+        Route::delete('/training-disclosure/requests/{trainingDisclosureRequest}', [\App\Http\Controllers\Back\TrainingDisclosureRequestsController::class, 'destroy'])->name('training-disclosure.requests.destroy');
 
         Route::get('/settings/recorded-courses', [\App\Http\Controllers\Back\RecordedCoursesController::class, 'index'])->name('settings.recorded-courses.index');
         Route::get('/settings/recorded-courses/create', [\App\Http\Controllers\Back\RecordedCoursesController::class, 'create'])->name('settings.recorded-courses.create');

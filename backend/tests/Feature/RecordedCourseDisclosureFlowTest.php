@@ -83,6 +83,32 @@ class RecordedCourseDisclosureFlowTest extends TestCase
             ->assertNotFound();
     }
 
+    public function test_public_lesson_list_strips_recording_indexes_from_titles(): void
+    {
+        $admin = $this->makeAdminWithTeam();
+        [$course, $lesson1] = $this->createCourseTwoLessons($admin);
+        $course->forceFill(['name_ar' => 'نظام العمل السعودي'])->save();
+        $lesson1->update([
+            'title_ar' => 'نظام العمل السعودي - اليوم الأول - الجلسة الأولى - أهمية نظام العمل السعودي',
+            'title_en' => 'ساعات العمل الأسبوعية-2',
+        ]);
+        $trainee = $this->createTrainee($admin);
+
+        $enrollment = RecordedCourseEnrollment::query()->create([
+            'team_id' => $trainee->team_id,
+            'trainee_id' => $trainee->id,
+            'recorded_course_id' => $course->id,
+            'enrolled_at' => now(),
+            'checked_in_at' => now(),
+        ]);
+
+        $this->get(route('recorded-courses.public.show', ['token' => $enrollment->fresh()->access_token]))
+            ->assertOk()
+            ->assertSee('أهمية نظام العمل السعودي')
+            ->assertDontSee('ساعات العمل الأسبوعية-2', false)
+            ->assertDontSee('اليوم الأول - الجلسة الأولى', false);
+    }
+
     public function test_public_access_requires_check_in_before_stream_and_unlock(): void
     {
         $admin = $this->makeAdminWithTeam();

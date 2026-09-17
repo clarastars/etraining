@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Back\RecordedCourse;
 use App\Models\Back\RecordedCourseEnrollment;
 use App\Models\Back\RecordedCourseLesson;
+use App\Models\Back\TrainingDisclosureRequest;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -93,6 +94,20 @@ class TrainingDisclosureController extends Controller
                 'completed_at' => $e->completed_at?->toIso8601String(),
             ]);
 
+        $disclosureRequestsCount = TrainingDisclosureRequest::query()->count();
+        $recentDisclosureRequests = TrainingDisclosureRequest::query()
+            ->latest()
+            ->limit(8)
+            ->get()
+            ->map(fn (TrainingDisclosureRequest $request) => [
+                'id' => $request->id,
+                'number' => $request->number,
+                'company_name' => $request->company_name,
+                'trainees_count' => $request->trainees_count,
+                'draft_count' => count($request->trainees_draft ?? []),
+                'created_at' => $request->created_at?->toIso8601String(),
+            ]);
+
         return Inertia::render('Back/TrainingDisclosure/Index', [
             'stats' => [
                 'courses' => $coursesCount,
@@ -102,9 +117,11 @@ class TrainingDisclosureController extends Controller
                 'completed' => $completedCount,
                 'pending_approval' => $pendingApprovalCount,
                 'certificates_sent' => $certificatesSentCount,
+                'disclosure_requests' => $disclosureRequestsCount,
             ],
             'courses' => $courses,
             'pendingApprovals' => $pendingApprovals,
+            'recentDisclosureRequests' => $recentDisclosureRequests,
             'canApproveCertificates' => auth()->user()->can('approve-recorded-course-certificates'),
         ]);
     }

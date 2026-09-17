@@ -7,6 +7,7 @@ namespace App\Console\Commands;
 use App\Models\Back\RecordedCourse;
 use App\Models\Back\RecordedCourseLesson;
 use App\Models\Team;
+use App\Support\RecordedCourseLessonTitle;
 use Google\Client as GoogleClient;
 use Google\Service\Drive as GoogleDriveService;
 use Illuminate\Console\Command;
@@ -234,7 +235,10 @@ class ImportRecordedCoursesFromDriveCommand extends Command
 
             foreach ($lessonSources as $index => $source) {
                 $seenFileIds[] = $source['drive_file_id'];
-                $title = pathinfo($source['name'], PATHINFO_FILENAME) ?: $source['name'];
+                $title = RecordedCourseLessonTitle::fromFileName(
+                    $source['name'],
+                    $course->name_ar ?: $course->name_en
+                );
                 $sortOrder = $index + 1;
 
                 try {

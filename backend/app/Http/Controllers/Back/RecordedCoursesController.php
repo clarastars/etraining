@@ -186,20 +186,23 @@ class RecordedCoursesController extends Controller
 
         $lessonsOrdered = $recordedCourse->lessons;
         $lessonsTotal = $lessonsOrdered->count();
+        $courseName = $recordedCourse->name_ar ?: $recordedCourse->name_en;
 
-        $enrollments = $recordedCourse->enrollments->map(function ($e) use ($lessonsOrdered, $lessonsTotal) {
+        $enrollments = $recordedCourse->enrollments->map(function ($e) use ($lessonsOrdered, $lessonsTotal, $courseName) {
             $byLessonId = $e->lessonProgress->keyBy('recorded_course_lesson_id');
             $lessonsCompleted = 0;
-            $lessonProgress = $lessonsOrdered->map(function (RecordedCourseLesson $lesson) use ($byLessonId, &$lessonsCompleted) {
+            $lessonProgress = $lessonsOrdered->map(function (RecordedCourseLesson $lesson) use ($byLessonId, &$lessonsCompleted, $courseName) {
                 $p = $byLessonId->get($lesson->id);
                 if ($p?->completed_at !== null) {
                     $lessonsCompleted++;
                 }
 
+                $titles = $lesson->displayTitles($courseName);
+
                 return [
                     'lesson_id' => $lesson->id,
-                    'title_ar' => $lesson->title_ar,
-                    'title_en' => $lesson->title_en ?? '',
+                    'title_ar' => $titles['title_ar'],
+                    'title_en' => $titles['title_en'],
                     'unlocked_at' => $p?->unlocked_at?->toIso8601String(),
                     'completed_at' => $p?->completed_at?->toIso8601String(),
                 ];
@@ -266,11 +269,15 @@ class RecordedCoursesController extends Controller
         return Inertia::render('Back/Settings/RecordedCourses/Enrollments', [
             'recordedCourse' => $this->courseSummary($recordedCourse),
             'readiness' => $this->readiness($recordedCourse),
-            'lessons' => $lessonsOrdered->map(fn (RecordedCourseLesson $lesson) => [
-                'id' => $lesson->id,
-                'title_ar' => $lesson->title_ar,
-                'title_en' => $lesson->title_en ?? '',
-            ]),
+            'lessons' => $lessonsOrdered->map(function (RecordedCourseLesson $lesson) use ($courseName) {
+                $titles = $lesson->displayTitles($courseName);
+
+                return [
+                    'id' => $lesson->id,
+                    'title_ar' => $titles['title_ar'],
+                    'title_en' => $titles['title_en'],
+                ];
+            }),
             'enrollments' => $enrollments,
             'companySummaries' => $companySummaries,
             'canApproveCertificates' => auth()->user()->can('approve-recorded-course-certificates'),
@@ -390,11 +397,13 @@ class RecordedCoursesController extends Controller
     {
         $media = $lesson->getFirstMedia(RecordedCourseLesson::VIDEO_COLLECTION);
 
+        $titles = $lesson->displayTitles($course->name_ar ?: $course->name_en);
+
         return [
             'id' => $lesson->id,
             'sort_order' => $lesson->sort_order,
-            'title_ar' => $lesson->title_ar,
-            'title_en' => $lesson->title_en ?? '',
+            'title_ar' => $titles['title_ar'],
+            'title_en' => $titles['title_en'],
             'has_video' => $media !== null,
             'video_file_name' => $media?->name,
             'video_stream_url' => $media

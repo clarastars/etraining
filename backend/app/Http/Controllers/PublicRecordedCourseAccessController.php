@@ -50,18 +50,19 @@ class PublicRecordedCourseAccessController extends Controller
         $trainee = $enrollment->trainee;
         $now = Carbon::now(config('app.timezone'));
 
-        $lessons = $course->lessons->map(function (RecordedCourseLesson $lesson) use ($enrollment, $trainee, $token): array {
+        $lessons = $course->lessons->map(function (RecordedCourseLesson $lesson) use ($enrollment, $trainee, $token, $course): array {
             $progress = $this->progressService->progressForLesson($enrollment, $lesson);
             $unlocked = $progress?->unlocked_at;
             $completed = $progress?->completed_at;
             $canStream = $enrollment->isCheckedIn()
                 && $this->progressService->canStreamLesson($trainee, $enrollment, $lesson);
             $hasVideo = $lesson->getFirstMedia(RecordedCourseLesson::VIDEO_COLLECTION) !== null;
+            $titles = $lesson->displayTitles($course->name_ar ?: $course->name_en);
 
             return [
                 'id' => $lesson->id,
-                'title_ar' => $lesson->title_ar,
-                'title_en' => $lesson->title_en,
+                'title_ar' => $titles['title_ar'],
+                'title_en' => $titles['title_en'],
                 'sort_order' => $lesson->sort_order,
                 'unlocked_at' => $unlocked,
                 'completed_at' => $completed,
