@@ -52,8 +52,9 @@ Vue.mixin({
                 try {
                     return window.route(name, params);
                 } catch (error) {
-                    if (Object.prototype.hasOwnProperty.call(routeFallbacks, name)) {
-                        return routeFallbacks[name];
+                    const fallback = resolveRouteFallback(name, params);
+                    if (fallback !== null) {
+                        return fallback;
                     }
 
                     throw error;
@@ -129,7 +130,42 @@ const routeFallbacks = {
     'back.chat.company-filters.update': '/back/chat/company-filters',
     'back.chat.company-filters.clear': '/back/chat/company-filters',
     'back.training-disclosure.index': '/back/training-disclosure',
+    'back.training-disclosure.requests.index': '/back/training-disclosure/requests',
+    'back.training-disclosure.requests.create': '/back/training-disclosure/requests/create',
+    'back.training-disclosure.requests.store': '/back/training-disclosure/requests',
+    'back.training-disclosure.requests.show': '/back/training-disclosure/requests/{trainingDisclosureRequest}',
+    'back.training-disclosure.requests.update': '/back/training-disclosure/requests/{trainingDisclosureRequest}',
+    'back.training-disclosure.requests.destroy': '/back/training-disclosure/requests/{trainingDisclosureRequest}',
 };
+
+function resolveRouteFallback(name, params = {}) {
+    if (!Object.prototype.hasOwnProperty.call(routeFallbacks, name)) {
+        return null;
+    }
+
+    let url = routeFallbacks[name];
+    if (url.indexOf('{') === -1) {
+        return url;
+    }
+
+    let id = null;
+    if (Array.isArray(params)) {
+        id = params[0];
+    } else if (params && typeof params === 'object') {
+        id = params.id
+            || params.trainingDisclosureRequest
+            || params.training_disclosure_request
+            || Object.values(params)[0];
+    } else if (params) {
+        id = params;
+    }
+
+    if (id) {
+        url = url.replace(/\{[^}]+\}/g, String(id));
+    }
+
+    return url;
+}
 
 function mergeZiggyRoutes(ziggy) {
     if (!ziggy || typeof window.Ziggy === 'undefined') {
