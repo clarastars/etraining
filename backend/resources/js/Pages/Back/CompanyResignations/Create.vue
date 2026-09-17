@@ -282,16 +282,29 @@ export default {
         if (this.company.id) {
             this.form.company_id = this.company.id;
 
-            // TO: Merge company profile, salesperson, and latest resignation recipients
-            this.form.emails_to = this.mergeEmailStrings(
-                this.company.email,
-                this.company.salesperson_email,
-                this.company.resignations.length ? this.company.resignations[0].emails_to : ''
+            const lastResignation = this.company.resignations[0] || null;
+
+            // Copy To/CC/BCC from the previous resignation. On the first one, seed CC/BCC from settings.
+            const emailsTo = this.parseEmails(lastResignation ? lastResignation.emails_to : '');
+            const emailsCc = this.parseEmails(lastResignation ? lastResignation.emails_cc : this.default_cc_emails);
+            const emailsBcc = this.parseEmails(lastResignation ? lastResignation.emails_bcc : this.default_bcc_emails);
+
+            const alreadyIncluded = new Set(
+                [...emailsTo, ...emailsCc, ...emailsBcc].map((email) => email.toLowerCase())
             );
 
-            // CC and BCC: Always use default emails from settings (not from last resignation)
-            this.form.emails_cc = this.normalizeEmailString(this.default_cc_emails);
-            this.form.emails_bcc = this.normalizeEmailString(this.default_bcc_emails);
+            // Join any company / salesperson emails that are not already in To, CC, or BCC
+            this.parseEmails(this.mergeEmailStrings(this.company.email, this.company.salesperson_email))
+                .forEach((email) => {
+                    if (!alreadyIncluded.has(email.toLowerCase())) {
+                        emailsTo.push(email);
+                        alreadyIncluded.add(email.toLowerCase());
+                    }
+                });
+
+            this.form.emails_to = emailsTo.join(', ');
+            this.form.emails_cc = emailsCc.join(', ');
+            this.form.emails_bcc = emailsBcc.join(', ');
         }
     },
     methods: {
@@ -310,24 +323,25 @@ export default {
                 .filter(Boolean)
                 .join(', ');
         },
-        mergeEmailStrings(...values) {
+        parseEmails(value) {
             const seen = new Set();
             const emails = [];
 
-            values.forEach((value) => {
-                this.normalizeEmailString(value)
-                    .split(', ')
-                    .filter(Boolean)
-                    .forEach((email) => {
-                        const key = email.toLowerCase();
-                        if (!seen.has(key)) {
-                            seen.add(key);
-                            emails.push(email);
-                        }
-                    });
-            });
+            this.normalizeEmailString(value)
+                .split(', ')
+                .filter(Boolean)
+                .forEach((email) => {
+                    const key = email.toLowerCase();
+                    if (!seen.has(key)) {
+                        seen.add(key);
+                        emails.push(email);
+                    }
+                });
 
-            return emails.join(', ');
+            return emails;
+        },
+        mergeEmailStrings(...values) {
+            return this.parseEmails(values.join(', ')).join(', ');
         },
         triggerSearching() {
             if (this.searchString) {
