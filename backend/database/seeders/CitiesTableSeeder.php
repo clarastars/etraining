@@ -48,6 +48,7 @@ class CitiesTableSeeder extends Seeder
             "سيهات",
             "شروره",
             "صبياء",
+            "الطائف",
             "عرعر",
             "عسير",
             "عنيزة",
