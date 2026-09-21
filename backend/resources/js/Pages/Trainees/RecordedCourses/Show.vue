@@ -11,10 +11,6 @@
 
       <h1 class="mb-4 font-bold text-3xl">{{ courseTitle }}</h1>
 
-      <p class="mb-6 text-sm text-gray-600">
-        {{ $t("words.unlock-delay-hours") }}: {{ course.unlock_delay_hours }}
-      </p>
-
       <div v-if="!can_unlock_today && next_pending_lesson_id" class="mb-6 p-4 bg-gray-100 rounded text-gray-800">
         {{ $t("words.recorded-course-no-allowed-weekday-today") }}
       </div>

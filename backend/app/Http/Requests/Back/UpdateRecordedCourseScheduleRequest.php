@@ -16,7 +16,6 @@ class UpdateRecordedCourseScheduleRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'unlock_delay_hours' => ['required', 'integer', 'min:1', 'max:8760'],
             'allowed_weekdays' => ['required', 'array', 'min:1'],
             'allowed_weekdays.*' => ['integer', 'in:0,1,2,3,4,5,6'],
         ];

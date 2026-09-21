@@ -29,7 +29,6 @@
             <th class="px-6 pt-6 pb-4">
               {{ $t("words.recorded-course-lessons-count") }}
             </th>
-            <th class="px-6 pt-6 pb-4">{{ $t("words.unlock-delay-hours") }}</th>
             <th class="px-6 pt-6 pb-4">{{ $t("words.allowed-weekdays") }}</th>
             <th class="px-6 pt-6 pb-4"></th>
           </tr>
@@ -46,9 +45,6 @@
             </td>
             <td class="border-t">
               <div class="px-6 py-4">{{ course.lessons_count }}</div>
-            </td>
-            <td class="border-t">
-              <div class="px-6 py-4">{{ course.unlock_delay_hours }}</div>
             </td>
             <td class="border-t">
               <div class="px-6 py-4">{{ formatWeekdays(course.allowed_weekdays) }}</div>
@@ -74,7 +70,7 @@
             </td>
           </tr>
           <tr v-if="recordedCourses.data.length === 0">
-            <td class="border-t px-6 py-4" colspan="6">
+            <td class="border-t px-6 py-4" colspan="5">
               <empty-slate />
             </td>
           </tr>

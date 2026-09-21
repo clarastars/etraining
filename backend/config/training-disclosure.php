@@ -24,7 +24,7 @@ return [
 
     'default_team_id' => env('TRAINING_DISCLOSURE_DEFAULT_TEAM_ID'),
 
-    'unlock_delay_hours' => (int) env('TRAINING_DISCLOSURE_UNLOCK_DELAY_HOURS', 24),
+    'unlock_delay_hours' => (int) env('TRAINING_DISCLOSURE_UNLOCK_DELAY_HOURS', 0),
 
     // ISO weekdays: 0=Sunday … 6=Saturday (matches recorded-course UI)
     'allowed_weekdays' => [0, 1, 2, 3, 4],

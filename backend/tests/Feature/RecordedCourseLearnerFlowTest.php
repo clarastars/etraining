@@ -33,7 +33,7 @@ class RecordedCourseLearnerFlowTest extends TestCase
     /**
      * @return array{0: User, 1: RecordedCourse, 2: RecordedCourseLesson, 3: RecordedCourseLesson}
      */
-    private function createCourseTwoLessonsSaturdayOnly(User $admin): array
+    private function createCourseTwoLessonsSaturdayOnly(User $admin, int $unlockDelayHours = 1): array
     {
         $this->actingAs($admin)->post(
             route('back.settings.recorded-courses.store'),
@@ -41,7 +41,7 @@ class RecordedCourseLearnerFlowTest extends TestCase
                 'name_ar' => 'دورة',
                 'name_en' => 'Course',
                 'description' => 'D',
-                'unlock_delay_hours' => 1,
+                'unlock_delay_hours' => $unlockDelayHours,
                 'allowed_weekdays' => [6],
                 'lessons' => [
                     ['title_ar' => 'L1', 'title_en' => 'L1'],
@@ -196,6 +196,58 @@ class RecordedCourseLearnerFlowTest extends TestCase
         Carbon::setTestNow($sat->copy()->addHours(2));
         $this->actingAs($traineeUser)
             ->post(route('recorded-courses.enrollments.unlock', $enrollment->id))
+            ->assertRedirect(route('recorded-courses.enrollments.show', $enrollment->id));
+
+        $this->assertDatabaseHas('recorded_course_lesson_progress', [
+            'recorded_course_enrollment_id' => $enrollment->id,
+            'recorded_course_lesson_id' => $lesson2->id,
+        ]);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_zero_delay_unlocks_next_lesson_immediately_after_complete(): void
+    {
+        $admin = $this->makeAdminWithTeam();
+
+        $this->actingAs($admin)->post(
+            route('back.settings.recorded-courses.store'),
+            [
+                'name_ar' => 'دورة يوم واحد',
+                'name_en' => 'Same day course',
+                'description' => 'D',
+                'unlock_delay_hours' => 0,
+                'allowed_weekdays' => [6],
+                'lessons' => [
+                    ['title_ar' => 'L1', 'title_en' => 'L1'],
+                    ['title_ar' => 'L2', 'title_en' => 'L2'],
+                ],
+            ]
+        )->assertRedirect();
+
+        $course = RecordedCourse::query()->where('name_en', 'Same day course')->firstOrFail();
+        $lessons = $course->lessons()->orderBy('sort_order')->get();
+        $lesson1 = $lessons[0];
+        $lesson2 = $lessons[1];
+
+        [$traineeUser, $trainee] = $this->createTraineeForTeam($admin);
+
+        $enrollment = RecordedCourseEnrollment::query()->create([
+            'team_id' => $trainee->team_id,
+            'trainee_id' => $trainee->id,
+            'recorded_course_id' => $course->id,
+            'enrolled_at' => now(),
+        ]);
+
+        $sat = Carbon::parse('2026-05-09 12:00:00', config('app.timezone'));
+        Carbon::setTestNow($sat);
+
+        $this->actingAs($traineeUser)
+            ->post(route('recorded-courses.enrollments.unlock', $enrollment->id))
+            ->assertRedirect(route('recorded-courses.enrollments.show', $enrollment->id));
+
+        $this->actingAs($traineeUser)
+            ->post(route('recorded-courses.enrollments.lessons.complete', [$enrollment->id, $lesson1->id]))
             ->assertRedirect(route('recorded-courses.enrollments.show', $enrollment->id));
 
         $this->assertDatabaseHas('recorded_course_lesson_progress', [

@@ -198,14 +198,13 @@ class RecordedCourseLessonsController extends Controller
 
         return [
             'details_complete' => filled($course->name_ar) && filled($course->name_en),
-            'schedule_complete' => $course->unlock_delay_hours > 0 && count($course->allowed_weekdays) > 0,
+            'schedule_complete' => count($course->allowed_weekdays ?? []) > 0,
             'lessons_count' => $lessons->count(),
             'lessons_with_video_count' => $withVideo,
             'all_lessons_have_video' => $lessons->count() > 0 && $withVideo === $lessons->count(),
             'ready_for_engineers' => filled($course->name_ar)
                 && filled($course->name_en)
-                && $course->unlock_delay_hours > 0
-                && count($course->allowed_weekdays) > 0
+                && count($course->allowed_weekdays ?? []) > 0
                 && $lessons->count() > 0
                 && $withVideo === $lessons->count(),
             'enrollments_count' => $course->enrollments()->count(),

@@ -16,7 +16,7 @@
         <jet-form-section @submitted="submitForm">
           <template #title>{{ $t("words.recorded-course-new") }}</template>
           <template #description>
-            <span>{{ $t("words.recorded-course-help-unlock") }}</span>
+            <span>{{ $t("words.recorded-course-schedule-description") }}</span>
             <span class="block mt-2 text-gray-600">{{
               $t("words.recorded-course-create-videos-on-edit")
             }}</span>
@@ -64,24 +64,6 @@
               />
               <jet-input-error
                 :message="form.error('description')"
-                class="mt-2"
-              />
-            </div>
-            <div class="col-span-6 sm:col-span-2">
-              <jet-label
-                for="unlock_delay_hours"
-                :value="$t('words.unlock-delay-hours')"
-              />
-              <jet-input
-                id="unlock_delay_hours"
-                v-model.number="form.unlock_delay_hours"
-                type="number"
-                min="1"
-                max="8760"
-                class="mt-1 block w-full"
-              />
-              <jet-input-error
-                :message="form.error('unlock_delay_hours')"
                 class="mt-2"
               />
             </div>
@@ -226,7 +208,6 @@ export default {
           name_ar: "",
           name_en: "",
           description: "",
-          unlock_delay_hours: 24,
           allowed_weekdays: [...this.defaultWeekdays],
           lessons: [
             {
@@ -257,7 +238,6 @@ export default {
         name_en: this.form.name_en == null ? "" : String(this.form.name_en),
         description:
           this.form.description == null ? "" : String(this.form.description),
-        unlock_delay_hours: Number(this.form.unlock_delay_hours),
         allowed_weekdays: Array.isArray(this.form.allowed_weekdays)
           ? this.form.allowed_weekdays.map((d) => Number(d))
           : [],

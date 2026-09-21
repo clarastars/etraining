@@ -69,4 +69,43 @@ class RecordedCoursesTest extends TestCase
             'title_en' => 'Lesson 1',
         ]);
     }
+
+    public function test_schedule_update_allows_same_day_completion_without_hours(): void
+    {
+        $admin = $this->makeAdminWithTeam();
+
+        $this->actingAs($admin)->post(
+            route('back.settings.recorded-courses.store'),
+            [
+                'name_ar' => 'دورة جدول',
+                'name_en' => 'Schedule course',
+                'description' => 'Desc',
+                'unlock_delay_hours' => 24,
+                'allowed_weekdays' => [0, 1, 2, 3, 4],
+                'lessons' => [
+                    [
+                        'title_ar' => 'درس 1',
+                        'title_en' => 'Lesson 1',
+                    ],
+                ],
+            ]
+        )->assertRedirect();
+
+        $course = RecordedCourse::query()->where('name_en', 'Schedule course')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->from(route('back.settings.recorded-courses.schedule.edit', $course))
+            ->put(
+                route('back.settings.recorded-courses.schedule.update', $course),
+                [
+                    'allowed_weekdays' => [0, 1, 2, 3, 4, 5, 6],
+                ]
+            )
+            ->assertRedirect(route('back.settings.recorded-courses.schedule.edit', $course));
+
+        $this->assertDatabaseHas('recorded_courses', [
+            'id' => $course->id,
+            'unlock_delay_hours' => 0,
+        ]);
+    }
 }

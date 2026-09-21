@@ -21,18 +21,6 @@
           {{ $t("words.recorded-course-schedule-description") }}
         </template>
         <template #form>
-          <div class="col-span-6 sm:col-span-3">
-            <jet-label for="unlock_delay_hours" :value="$t('words.unlock-delay-hours')" />
-            <jet-input
-              id="unlock_delay_hours"
-              v-model.number="form.unlock_delay_hours"
-              type="number"
-              min="1"
-              max="8760"
-              class="mt-1 block w-full"
-            />
-            <jet-input-error :message="form.error('unlock_delay_hours')" class="mt-2" />
-          </div>
           <div class="col-span-6">
             <jet-label :value="$t('words.allowed-weekdays')" />
             <div class="mt-2 flex flex-wrap gap-4">
@@ -82,7 +70,6 @@ import RecordedCourseStepNav from "@/Components/RecordedCourseStepNav";
 import JetActionMessage from "@/Jetstream/ActionMessage";
 import JetButton from "@/Jetstream/Button";
 import JetFormSection from "@/Jetstream/FormSection";
-import JetInput from "@/Jetstream/Input";
 import JetInputError from "@/Jetstream/InputError";
 import JetLabel from "@/Jetstream/Label";
 
@@ -96,7 +83,6 @@ export default {
     JetActionMessage,
     JetButton,
     JetFormSection,
-    JetInput,
     JetInputError,
     JetLabel,
   },
@@ -108,7 +94,6 @@ export default {
     return {
       weekdayValues: [0, 1, 2, 3, 4, 5, 6],
       form: this.$inertia.form({
-        unlock_delay_hours: this.recordedCourse.unlock_delay_hours,
         allowed_weekdays: [...(this.recordedCourse.allowed_weekdays || [])],
       }),
     };

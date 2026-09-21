@@ -169,6 +169,7 @@ class RecordedCourseProgressService
         $progress->save();
 
         $this->refreshEnrollmentCompletion($enrollment, $now);
+        $this->maybeUnlockNextLessonImmediately($trainee, $enrollment, $now);
 
         return $progress->fresh();
     }
@@ -225,5 +226,25 @@ class RecordedCourseProgressService
         $progress = $this->progressForLesson($enrollment, $lesson);
 
         return $progress !== null && $progress->unlocked_at !== null;
+    }
+
+    /**
+     * With no waiting period, open the next lesson as soon as the previous one is completed.
+     */
+    private function maybeUnlockNextLessonImmediately(
+        Trainee $trainee,
+        RecordedCourseEnrollment $enrollment,
+        Carbon $now
+    ): void {
+        $course = $this->courseForEnrollment($enrollment);
+        if ((int) $course->unlock_delay_hours > 0) {
+            return;
+        }
+
+        if (! $this->canShowUnlockButton($enrollment, $now)) {
+            return;
+        }
+
+        $this->unlockNextLesson($trainee, $enrollment, $now);
     }
 }
