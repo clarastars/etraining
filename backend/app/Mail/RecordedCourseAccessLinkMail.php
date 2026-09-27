@@ -30,12 +30,22 @@ class RecordedCourseAccessLinkMail extends Mailable
         $courseName = $this->enrollment->recordedCourse->name_ar
             ?: $this->enrollment->recordedCourse->name_en;
 
-        return $this
+        $mail = $this
             ->subject('رابط الدورة التدريبية — '.$courseName)
             ->markdown('emails.recorded-course-access-link', [
                 'traineeName' => $this->enrollment->trainee->name ?? '',
                 'courseName' => $courseName,
                 'accessUrl' => $this->enrollment->accessUrl(),
             ]);
+
+        $mail->withSwiftMessage(function ($message): void {
+            $message->getHeaders()
+                ->addTextHeader('X-Mailgun-Variables', json_encode([
+                    'recorded_course_enrollment_id' => $this->enrollment->id,
+                    'type' => 'recorded_course_access_link',
+                ]));
+        });
+
+        return $mail;
     }
 }

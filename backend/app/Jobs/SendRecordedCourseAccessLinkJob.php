@@ -53,6 +53,11 @@ class SendRecordedCourseAccessLinkJob implements ShouldQueue
             ->send(new RecordedCourseAccessLinkMail($enrollment));
 
         $enrollment->access_link_sent_at = now();
+        $enrollment->delivery_status = 'pending';
+        $enrollment->delivered_at = null;
+        $enrollment->failed_at = null;
+        $enrollment->delivery_failure_reason = null;
+        $enrollment->mailgun_message_id = null;
         $enrollment->save();
     }
 }

@@ -280,6 +280,87 @@ class RecordedCourseDisclosureFlowTest extends TestCase
         $this->assertSame('msg-rc-123@mailgun', $enrollment->mailgun_message_id);
     }
 
+    public function test_mailgun_webhook_updates_recorded_course_access_link_delivery(): void
+    {
+        $admin = $this->makeAdminWithTeam();
+        [$course] = $this->createCourseTwoLessons($admin);
+        $trainee = $this->createTrainee($admin);
+
+        $enrollment = RecordedCourseEnrollment::query()->create([
+            'team_id' => $trainee->team_id,
+            'trainee_id' => $trainee->id,
+            'recorded_course_id' => $course->id,
+            'enrolled_at' => now(),
+            'access_link_sent_at' => now(),
+            'delivery_status' => 'pending',
+            'certificate_status' => RecordedCourseEnrollment::CERTIFICATE_STATUS_NONE,
+        ]);
+
+        $this->post(route('webhooks.mail'), [
+            'event-data' => [
+                'event' => 'delivered',
+                'recipient' => $trainee->email,
+                'user-variables' => [
+                    'recorded_course_enrollment_id' => $enrollment->id,
+                    'type' => 'recorded_course_access_link',
+                ],
+                'message' => [
+                    'headers' => [
+                        'message-id' => 'msg-access-123@mailgun',
+                    ],
+                ],
+            ],
+        ])->assertOk();
+
+        $enrollment->refresh();
+        $this->assertSame('delivered', $enrollment->delivery_status);
+        $this->assertNotNull($enrollment->delivered_at);
+        $this->assertSame('msg-access-123@mailgun', $enrollment->mailgun_message_id);
+        $this->assertSame(RecordedCourseEnrollment::CERTIFICATE_STATUS_NONE, $enrollment->certificate_status);
+    }
+
+    public function test_mailgun_webhook_marks_access_link_delivery_failed_without_touching_certificate(): void
+    {
+        $admin = $this->makeAdminWithTeam();
+        [$course] = $this->createCourseTwoLessons($admin);
+        $trainee = $this->createTrainee($admin);
+
+        $enrollment = RecordedCourseEnrollment::query()->create([
+            'team_id' => $trainee->team_id,
+            'trainee_id' => $trainee->id,
+            'recorded_course_id' => $course->id,
+            'enrolled_at' => now(),
+            'access_link_sent_at' => now(),
+            'delivery_status' => 'pending',
+            'certificate_status' => RecordedCourseEnrollment::CERTIFICATE_STATUS_NONE,
+        ]);
+
+        $this->post(route('webhooks.mail'), [
+            'event-data' => [
+                'event' => 'bounced',
+                'recipient' => $trainee->email,
+                'user-variables' => [
+                    'recorded_course_enrollment_id' => $enrollment->id,
+                    'type' => 'recorded_course_access_link',
+                ],
+                'delivery-status' => [
+                    'message' => 'mailbox full',
+                ],
+                'message' => [
+                    'headers' => [
+                        'message-id' => 'msg-access-bounce@mailgun',
+                    ],
+                ],
+            ],
+        ])->assertOk();
+
+        $enrollment->refresh();
+        $this->assertSame('failed', $enrollment->delivery_status);
+        $this->assertNotNull($enrollment->failed_at);
+        $this->assertStringContainsString('mailbox full', (string) $enrollment->delivery_failure_reason);
+        $this->assertSame(RecordedCourseEnrollment::CERTIFICATE_STATUS_NONE, $enrollment->certificate_status);
+    }
+
     public function test_mailgun_webhook_ignores_cc_recipient_events(): void
     {
         $admin = $this->makeAdminWithTeam();

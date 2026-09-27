@@ -210,6 +210,7 @@ class MailController extends Controller
 
         if (array_key_exists('recorded_course_enrollment_id', $eventData['user-variables'] ?? [])) {
             $enrollmentId = $eventData['user-variables']['recorded_course_enrollment_id'];
+            $mailType = $eventData['user-variables']['type'] ?? null;
             $enrollment = RecordedCourseEnrollment::query()
                 ->with('trainee')
                 ->find($enrollmentId);
@@ -223,7 +224,30 @@ class MailController extends Controller
                         ?? Arr::get($eventData, 'message.headers.Message-Id')
                         ?? Arr::get($eventData, 'Message-Id');
 
-                    if ($eventData['event'] === 'delivered') {
+                    if ($mailType === 'recorded_course_access_link') {
+                        if ($eventData['event'] === 'delivered') {
+                            $enrollment->update([
+                                'delivery_status' => 'delivered',
+                                'delivered_at' => now(),
+                                'failed_at' => null,
+                                'delivery_failure_reason' => null,
+                                'mailgun_message_id' => $enrollment->mailgun_message_id ?: $messageId,
+                            ]);
+                        } elseif (in_array($eventData['event'], ['failed', 'bounced', 'complained'], true)) {
+                            $reason = match ($eventData['event']) {
+                                'bounced' => 'Email bounced: ' . (Arr::get($eventData, 'delivery-status.message', 'Unknown bounce reason')),
+                                'complained' => 'Email marked as spam/complaint',
+                                default => Arr::get($eventData, 'delivery-status.message', 'Unknown delivery failure'),
+                            };
+
+                            $enrollment->update([
+                                'delivery_status' => 'failed',
+                                'failed_at' => now(),
+                                'delivery_failure_reason' => $reason,
+                                'mailgun_message_id' => $enrollment->mailgun_message_id ?: $messageId,
+                            ]);
+                        }
+                    } elseif ($eventData['event'] === 'delivered') {
                         $enrollment->update([
                             'delivery_status' => 'delivered',
                             'delivered_at' => now(),
