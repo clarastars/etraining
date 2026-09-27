@@ -24,12 +24,14 @@ class TraineeFixedTrainingCostsController extends Controller
 
         $request->validate([
             'override_training_costs' => 'nullable|numeric',
+            'platform_reward' => 'nullable|numeric',
             'ignore_attendance' => 'nullable|boolean',
             'dont_edit_notice' => 'nullable|boolean',
         ]);
 
         $trainee = Trainee::findOrFail($id);
         $trainee->override_training_costs = $request->override_training_costs;
+        $trainee->platform_reward = $request->platform_reward;
         $trainee->ignore_attendance = $request->boolean('ignore_attendance');
         $trainee->dont_edit_notice = $request->boolean('dont_edit_notice');
         $trainee->save();

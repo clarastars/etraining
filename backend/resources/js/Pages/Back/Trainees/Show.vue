@@ -1064,6 +1064,26 @@
           </inertia-link>
         </div>
 
+        <div class="col-span-6 sm:col-span-1" v-can="'override-training-costs'">
+          <jet-label for="platform-reward" :value="$t('words.platform-reward')" />
+          <inertia-link
+            :href="route('back.trainees.fixed-training-costs', trainee.id)"
+          >
+            <span
+              v-if="trainee.platform_reward !== null"
+              class="text-sm inline-block mt-2 p-1 px-2 bg-gray-200 rounded-lg bg-red-600 text-white"
+            >
+              {{ trainee.platform_reward }} ر.س.
+            </span>
+            <span
+              v-else
+              class="text-sm inline-block mt-2 p-1 px-2 bg-gray-200 rounded-lg"
+            >
+              {{ $t("words.not-set") }}
+            </span>
+          </inertia-link>
+        </div>
+
           <div class="col-span-6 sm:col-span-1" v-can="'override-training-costs'">
               <jet-label for="name" :value="$t('words.gosi-deleted')" />
               <inertia-link

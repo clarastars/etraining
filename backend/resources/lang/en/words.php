@@ -996,6 +996,8 @@ return [
     'override-training-costs' => 'View and edit fixed training costs on trainee page',
     'apply-invoice-value-over-fixed-costs' => 'Apply entered invoice value over fixed training costs',
     'fixed-training-costs' => 'Fixed training costs',
+    'platform-reward' => 'Platform reward',
+    'here-you-can-set-platform-reward' => 'Here you can set the platform reward for this trainee',
     'here-you-can-override-training-cost-for-the-trainee' => 'Here you can specify the training costs and alerts for the trainee',
     'ignore-attendance-warnings-and-emails' => 'Ingore attendance warnings and emaiks',
     'do-not-edit-without-permission-notice' => 'Do not edit without permission notice',

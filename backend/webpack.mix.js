@@ -12,6 +12,8 @@ const path = require('path');
  | file for the application as well as bundling up all the JS files.
  |
  */
+mix.disableNotifications();
+
 mix.options({
     hmrOptions: {
         host: 'etraining.test',

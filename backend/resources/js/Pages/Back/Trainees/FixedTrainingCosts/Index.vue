@@ -23,6 +23,12 @@
                                 <jet-input-error :message="form.error('monthly-costs')" class="mt-2" />
                             </div>
                             <div class="col-span-4 sm:col-span-4 mt-4">
+                                <jet-label for="platform-reward" :value="$t('words.platform-reward')" />
+                                <jet-input id="platform-reward" type="number" class="mt-2 block w-full" v-model="form.platform_reward" autocomplete="off" />
+                                <p class="text-sm text-gray-500 mt-1">{{ $t('words.here-you-can-set-platform-reward') }}</p>
+                                <jet-input-error :message="form.error('platform_reward')" class="mt-2" />
+                            </div>
+                            <div class="col-span-4 sm:col-span-4 mt-4">
                                 <jet-label for="monthly-costs" :value="$t('words.ignore-attendance-warnings-and-emails')" />
 
                                 <div class="relative mt-2">
@@ -121,6 +127,7 @@ export default {
         return {
             form: this.$inertia.form({
                 override_training_costs: null,
+                platform_reward: null,
                 ignore_attendance: false,
                 dont_edit_notice: false,
             }, {
@@ -130,6 +137,7 @@ export default {
     },
     mounted() {
         this.form.override_training_costs = this.trainee.override_training_costs;
+        this.form.platform_reward = this.trainee.platform_reward;
         this.form.ignore_attendance = this.trainee.ignore_attendance;
         this.form.dont_edit_notice = this.trainee.dont_edit_notice;
     },

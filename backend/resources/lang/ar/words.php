@@ -1011,6 +1011,8 @@ return [
     'override-training-costs' => 'عرض وتعديل رسوم التدريب الثابتة في صفحة المتدربة',
     'apply-invoice-value-over-fixed-costs' => 'اعتماد قيمة الفاتورة المدخلة بدل الرسوم المثبتة',
     'fixed-training-costs' => 'رسوم تدريب ثابتة',
+    'platform-reward' => 'مكافأة المنصة',
+    'here-you-can-set-platform-reward' => 'هنا يمكنك تحديد مكافأة المنصة لهذه المتدربة',
     'not-set' => 'غير مفعل',
     'here-you-can-override-training-cost-for-the-trainee' => 'هنا يمكنك تحديد رسوم التدريب او تجاهل رسوم التدريب للشركة',
     'disable' => 'لا',
