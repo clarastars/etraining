@@ -133,6 +133,7 @@ return [
         'azzah.abdullah@hadaf-hq.com',
         'reem.center@hadaf-hq.com',
         'riyadh.center@hadaf-hq.com',
+        'sara@hadaf-hq.com',
     ],
 
 ];
