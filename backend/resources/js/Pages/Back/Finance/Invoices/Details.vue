@@ -112,6 +112,33 @@
                         <td class="border px-2 py-1 bg-gray-50">{{ formatAmount(row.refund_due) }}</td>
                     </tr>
                     </tbody>
+                    <tfoot>
+                    <tr class="bg-gray-100 font-semibold">
+                        <td class="border px-2 py-2 sticky right-0 bg-gray-100">{{ $t('words.total') }}</td>
+                        <td class="border px-2 py-2"></td>
+                        <td class="border px-2 py-2">{{ formatTotal('sub_total') }}</td>
+                        <td class="border px-2 py-2">{{ formatTotal('tax') }}</td>
+                        <td class="border px-2 py-2">{{ formatTotal('grand_total') }}</td>
+                        <td class="border px-2 py-2"></td>
+                        <td class="border px-2 py-2"></td>
+                        <td class="border px-2 py-2"></td>
+                        <td class="border px-2 py-2"></td>
+                        <td class="border px-2 py-2"></td>
+                        <td class="border px-2 py-2">{{ formatTotal('day_count') }}</td>
+                        <td class="border px-2 py-2">{{ formatTotal('full_salary') }}</td>
+                        <td class="border px-2 py-2">{{ formatTotal('daily_salary') }}</td>
+                        <td class="border px-2 py-2">{{ formatTotal('salary_due') }}</td>
+                        <td class="border px-2 py-2">{{ formatTotal('full_reward') }}</td>
+                        <td class="border px-2 py-2">{{ formatTotal('daily_reward') }}</td>
+                        <td class="border px-2 py-2">{{ formatTotal('reward_due') }}</td>
+                        <td class="border px-2 py-2">{{ formatTotal('full_fees') }}</td>
+                        <td class="border px-2 py-2">{{ formatTotal('daily_fees') }}</td>
+                        <td class="border px-2 py-2">{{ formatTotal('fees_due') }}</td>
+                        <td class="border px-2 py-2">{{ formatTotal('full_refund') }}</td>
+                        <td class="border px-2 py-2">{{ formatTotal('daily_refund') }}</td>
+                        <td class="border px-2 py-2">{{ formatTotal('refund_due') }}</td>
+                    </tr>
+                    </tfoot>
                 </table>
             </div>
         </div>
@@ -151,6 +178,31 @@
                 this.localRows = rows || [];
             },
         },
+        computed: {
+            totals() {
+                const keys = [
+                    'sub_total', 'tax', 'grand_total', 'day_count',
+                    'full_salary', 'daily_salary', 'salary_due',
+                    'full_reward', 'daily_reward', 'reward_due',
+                    'full_fees', 'daily_fees', 'fees_due',
+                    'full_refund', 'daily_refund', 'refund_due',
+                ];
+                const totals = {};
+
+                keys.forEach((key) => {
+                    totals[key] = this.localRows.reduce((sum, row) => {
+                        const value = row[key];
+                        if (value === null || value === undefined || value === '') {
+                            return sum;
+                        }
+
+                        return sum + Number(value);
+                    }, 0);
+                });
+
+                return totals;
+            },
+        },
         mounted() {
             let vm = this;
             $(document).ready(function () {
@@ -187,6 +239,14 @@
                     return '';
                 }
                 return Number(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            },
+            formatTotal(key) {
+                const value = this.totals[key];
+                if (key === 'day_count') {
+                    return Number(value).toLocaleString('en-US', { maximumFractionDigits: 0 });
+                }
+
+                return this.formatAmount(value);
             },
             saveCell(row, field, value) {
                 axios.patch(route('back.finance.invoices.details.update', row.invoice_id), {

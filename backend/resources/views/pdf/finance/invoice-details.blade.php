@@ -72,6 +72,53 @@
             </tr>
         @endforeach
         </tbody>
+        @php
+            $totalKeys = [
+                'sub_total', 'tax', 'grand_total', 'day_count',
+                'full_salary', 'daily_salary', 'salary_due',
+                'full_reward', 'daily_reward', 'reward_due',
+                'full_fees', 'daily_fees', 'fees_due',
+                'full_refund', 'daily_refund', 'refund_due',
+            ];
+            $totals = array_fill_keys($totalKeys, 0);
+            foreach ($rows as $row) {
+                foreach ($totalKeys as $key) {
+                    if ($row[$key] !== null && $row[$key] !== '') {
+                        $totals[$key] += (float) $row[$key];
+                    }
+                }
+            }
+            $money = function (string $key) use ($totals): string {
+                return number_format($totals[$key], 2);
+            };
+        @endphp
+        <tfoot>
+        <tr>
+            <th>{{ __('words.total') }}</th>
+            <th></th>
+            <th>{{ $money('sub_total') }}</th>
+            <th>{{ $money('tax') }}</th>
+            <th>{{ $money('grand_total') }}</th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th>{{ number_format($totals['day_count'], 0) }}</th>
+            <th>{{ $money('full_salary') }}</th>
+            <th>{{ $money('daily_salary') }}</th>
+            <th>{{ $money('salary_due') }}</th>
+            <th>{{ $money('full_reward') }}</th>
+            <th>{{ $money('daily_reward') }}</th>
+            <th>{{ $money('reward_due') }}</th>
+            <th>{{ $money('full_fees') }}</th>
+            <th>{{ $money('daily_fees') }}</th>
+            <th>{{ $money('fees_due') }}</th>
+            <th>{{ $money('full_refund') }}</th>
+            <th>{{ $money('daily_refund') }}</th>
+            <th>{{ $money('refund_due') }}</th>
+        </tr>
+        </tfoot>
     </table>
 </body>
 </html>

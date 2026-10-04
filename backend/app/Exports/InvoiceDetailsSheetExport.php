@@ -105,6 +105,20 @@ class InvoiceDetailsSheetExport implements FromArray, WithEvents
                     $sheet->setCellValue('V'.$line, '=IF(U'.$line.'="","",U'.$line.'/30)');
                     $sheet->setCellValue('W'.$line, '=IF(OR(K'.$line.'="",V'.$line.'=""),"",V'.$line.'*K'.$line.')');
                 }
+
+                if ($this->rows === []) {
+                    return;
+                }
+
+                $last = count($this->rows) + 1;
+                $totalRow = $last + 1;
+                $sheet->setCellValue('A'.$totalRow, __('words.total'));
+
+                foreach (['C', 'D', 'E', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W'] as $column) {
+                    $sheet->setCellValue($column.$totalRow, '=SUM('.$column.'2:'.$column.$last.')');
+                }
+
+                $sheet->getStyle('A'.$totalRow.':W'.$totalRow)->getFont()->setBold(true);
             },
         ];
     }

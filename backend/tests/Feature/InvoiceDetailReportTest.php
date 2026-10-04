@@ -205,6 +205,9 @@ class InvoiceDetailReportTest extends TestCase
 
         $this->assertIsString($xml);
         $this->assertStringContainsString('DAYS360', $xml);
+        $this->assertStringContainsString('SUM(C2:C2)', $xml);
+        $this->assertStringContainsString('SUM(N2:N2)', $xml);
+        $this->assertStringContainsString('SUM(W2:W2)', $xml);
     }
 
     public function test_pdf_export_uses_the_saved_sheet(): void
