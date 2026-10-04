@@ -75,6 +75,7 @@ class RolesService
         'approve-recorded-course-certificates',
         'access-whatsapp-chats',
         'view-whatsapp-reports',
+        'view-financial-invoices-details',
     ];
 
     public $instructorPermissions = [
