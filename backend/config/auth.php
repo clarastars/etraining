@@ -136,4 +136,8 @@ return [
         'sara@hadaf-hq.com',
     ],
 
+    'special_documents_allowed_emails' => [
+        'rahmah@hadaf-hq.com',
+    ],
+
 ];

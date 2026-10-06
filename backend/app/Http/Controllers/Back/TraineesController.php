@@ -263,7 +263,11 @@ class TraineesController extends Controller
         
         $allowedUsers = User::whereHas('roles', function($query) use ($allowedRoleIds) {
             $query->whereIn('id', $allowedRoleIds);
-        })->pluck('email')->toArray();
+        })->pluck('email')
+            ->merge(config('auth.special_documents_allowed_emails', []))
+            ->unique()
+            ->values()
+            ->toArray();
 
         // Check if user has limited view permission (identity only)
         // This user can only view identity file and basic info
@@ -1448,7 +1452,11 @@ class TraineesController extends Controller
         
         $allowedUsers = User::whereHas('roles', function($query) use ($allowedRoleIds) {
             $query->whereIn('id', $allowedRoleIds);
-        })->pluck('email')->toArray();
+        })->pluck('email')
+            ->merge(config('auth.special_documents_allowed_emails', []))
+            ->unique()
+            ->values()
+            ->toArray();
 
         return Inertia::render('Back/Trainees/ShowBlocked', [
             'trainee' => $trainee,
