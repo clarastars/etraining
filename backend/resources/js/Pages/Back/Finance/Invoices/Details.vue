@@ -39,7 +39,7 @@
                 <a class="btn btn-gray" :href="exportUrl('back.finance.invoices.details.pdf')">PDF</a>
             </div>
 
-            <div v-if="localRows.length" class="mt-4 overflow-x-auto bg-white shadow rounded">
+            <div v-if="localRows.length" class="invoice-details-scroll mt-4 bg-white shadow rounded">
                 <table class="min-w-max text-xs border-collapse">
                     <thead>
                     <tr class="bg-gray-100">
@@ -69,7 +69,7 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <tr v-for="row in localRows" :key="row.invoice_id">
+                    <tr v-for="(row, rowIndex) in localRows" :key="row.invoice_id">
                         <td class="border px-2 py-1 sticky right-0 bg-white whitespace-nowrap">{{ row.trainee_name }}</td>
                         <td class="border px-2 py-1">{{ row.identity_number }}</td>
                         <td class="border px-2 py-1">{{ formatAmount(row.sub_total) }}</td>
@@ -85,28 +85,82 @@
                         <td class="border px-2 py-1">{{ row.invoice_date }}</td>
                         <td class="border px-1 py-1">
                             <input type="date" class="form-input text-xs" :value="row.manual_start_date || ''" @change="saveCell(row, 'manual_start_date', $event.target.value)">
+                            <button
+                                v-if="canCopyDown(rowIndex)"
+                                type="button"
+                                class="block mt-1 text-blue-600 underline whitespace-nowrap"
+                                :disabled="copyingDown"
+                                @click="copyDown('manual_start_date')"
+                            >
+                                {{ $t('words.apply-to-all-below') }}
+                            </button>
                         </td>
                         <td class="border px-1 py-1">
                             <input type="date" class="form-input text-xs" :value="row.end_date || ''" @change="saveCell(row, 'end_date', $event.target.value)">
+                            <button
+                                v-if="canCopyDown(rowIndex)"
+                                type="button"
+                                class="block mt-1 text-blue-600 underline whitespace-nowrap"
+                                :disabled="copyingDown"
+                                @click="copyDown('end_date')"
+                            >
+                                {{ $t('words.apply-to-all-below') }}
+                            </button>
                         </td>
                         <td class="border px-2 py-1 bg-gray-50">{{ row.day_count === null ? '' : row.day_count }}</td>
                         <td class="border px-1 py-1">
                             <input type="number" min="0" step="0.01" class="form-input text-xs w-24" :value="numberValue(row.full_salary)" @change="saveCell(row, 'full_salary', $event.target.value)">
+                            <button
+                                v-if="canCopyDown(rowIndex)"
+                                type="button"
+                                class="block mt-1 text-blue-600 underline whitespace-nowrap"
+                                :disabled="copyingDown"
+                                @click="copyDown('full_salary')"
+                            >
+                                {{ $t('words.apply-to-all-below') }}
+                            </button>
                         </td>
                         <td class="border px-2 py-1 bg-gray-50">{{ formatAmount(row.daily_salary) }}</td>
                         <td class="border px-2 py-1 bg-gray-50">{{ formatAmount(row.salary_due) }}</td>
                         <td class="border px-1 py-1">
                             <input type="number" min="0" step="0.01" class="form-input text-xs w-24" :value="numberValue(row.full_reward)" @change="saveCell(row, 'full_reward', $event.target.value)">
+                            <button
+                                v-if="canCopyDown(rowIndex)"
+                                type="button"
+                                class="block mt-1 text-blue-600 underline whitespace-nowrap"
+                                :disabled="copyingDown"
+                                @click="copyDown('full_reward')"
+                            >
+                                {{ $t('words.apply-to-all-below') }}
+                            </button>
                         </td>
                         <td class="border px-2 py-1 bg-gray-50">{{ formatAmount(row.daily_reward) }}</td>
                         <td class="border px-2 py-1 bg-gray-50">{{ formatAmount(row.reward_due) }}</td>
                         <td class="border px-1 py-1">
                             <input type="number" min="0" step="0.01" class="form-input text-xs w-24" :value="numberValue(row.full_fees)" @change="saveCell(row, 'full_fees', $event.target.value)">
+                            <button
+                                v-if="canCopyDown(rowIndex)"
+                                type="button"
+                                class="block mt-1 text-blue-600 underline whitespace-nowrap"
+                                :disabled="copyingDown"
+                                @click="copyDown('full_fees')"
+                            >
+                                {{ $t('words.apply-to-all-below') }}
+                            </button>
                         </td>
                         <td class="border px-2 py-1 bg-gray-50">{{ formatAmount(row.daily_fees) }}</td>
                         <td class="border px-2 py-1 bg-gray-50">{{ formatAmount(row.fees_due) }}</td>
                         <td class="border px-1 py-1">
                             <input type="number" min="0" step="0.01" class="form-input text-xs w-24" :value="numberValue(row.full_refund)" @change="saveCell(row, 'full_refund', $event.target.value)">
+                            <button
+                                v-if="canCopyDown(rowIndex)"
+                                type="button"
+                                class="block mt-1 text-blue-600 underline whitespace-nowrap"
+                                :disabled="copyingDown"
+                                @click="copyDown('full_refund')"
+                            >
+                                {{ $t('words.apply-to-all-below') }}
+                            </button>
                         </td>
                         <td class="border px-2 py-1 bg-gray-50">{{ formatAmount(row.daily_refund) }}</td>
                         <td class="border px-2 py-1 bg-gray-50">{{ formatAmount(row.refund_due) }}</td>
@@ -171,6 +225,7 @@
                     date_to: this.filters.date_to || new Date().toISOString().substring(0, 10),
                 },
                 localRows: this.rows || [],
+                copyingDown: false,
             }
         },
         watch: {
@@ -248,8 +303,11 @@
 
                 return this.formatAmount(value);
             },
+            canCopyDown(rowIndex) {
+                return rowIndex === 0 && this.localRows.length > 1;
+            },
             saveCell(row, field, value) {
-                axios.patch(route('back.finance.invoices.details.update', row.invoice_id), {
+                return axios.patch(route('back.finance.invoices.details.update', row.invoice_id), {
                     field: field,
                     value: value === '' ? null : value,
                 }).then(response => {
@@ -259,7 +317,27 @@
                     }
                 }).catch(() => {
                     alert(this.$t('words.error-occurred'));
+                    return Promise.reject();
                 });
+            },
+            copyDown(field) {
+                if (this.copyingDown || this.localRows.length < 2) {
+                    return;
+                }
+
+                if (!window.confirm(this.$t('words.apply-to-all-below-confirm'))) {
+                    return;
+                }
+
+                const value = this.localRows[0][field];
+                const rows = this.localRows.slice(1);
+                this.copyingDown = true;
+
+                Promise.all(rows.map(row => this.saveCell(row, field, value === null || value === undefined ? '' : value)))
+                    .catch(() => {})
+                    .finally(() => {
+                        this.copyingDown = false;
+                    });
             },
             refreshMasdr(row) {
                 if (!window.confirm(this.$t('words.masdr-refresh-confirm'))) {
@@ -282,3 +360,39 @@
         },
     }
 </script>
+
+<style scoped>
+.invoice-details-scroll {
+    max-height: calc(100vh - 12rem);
+    overflow-x: scroll;
+    overflow-y: auto;
+    scrollbar-color: #6b7280 #e5e7eb;
+}
+
+.invoice-details-scroll::-webkit-scrollbar {
+    -webkit-appearance: none;
+    height: 14px;
+    width: 14px;
+}
+
+.invoice-details-scroll::-webkit-scrollbar-thumb {
+    background: #6b7280;
+    border-radius: 7px;
+}
+
+.invoice-details-scroll::-webkit-scrollbar-track {
+    background: #e5e7eb;
+}
+
+.invoice-details-scroll thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #f3f4f6;
+}
+
+.invoice-details-scroll thead th:first-child {
+    z-index: 20;
+    right: 0;
+}
+</style>

@@ -221,6 +221,8 @@ return [
     'masdr-identity-missing' => 'This trainee does not have a valid identity number.',
     'masdr-refresh-confirm' => 'This requests fresh Masdr data and counts against the monthly limit. Continue?',
     'invoice-details-hint' => 'The Masdr start date is shown only. Day count uses the manual start date and the end date.',
+    'apply-to-all-below' => 'Apply to all',
+    'apply-to-all-below-confirm' => 'Apply this value to all rows below?',
     'whatsapp-reports' => 'WhatsApp reports',
     'whatsapp-reports-queue-health' => 'Queue health',
     'whatsapp-reports-activity' => 'Activity',

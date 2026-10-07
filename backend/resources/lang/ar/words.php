@@ -221,6 +221,8 @@ return [
     'masdr-identity-missing' => 'لا يوجد رقم هوية صالح لهذا المتدرب.',
     'masdr-refresh-confirm' => 'سيتم طلب بيانات جديدة من مصدر وتُحسب من الحد الشهري. هل تريد المتابعة؟',
     'invoice-details-hint' => 'تاريخ المباشرة (مصدر) للعرض فقط. عدد الأيام يحسب من تاريخ المباشرة وتاريخ الانتهاء.',
+    'apply-to-all-below' => 'تطبيق على الكل',
+    'apply-to-all-below-confirm' => 'تطبيق هذه القيمة على كل الصفوف؟',
     'whatsapp-reports' => 'تقارير واتساب',
     'whatsapp-reports-queue-health' => 'صحة الطابور',
     'whatsapp-reports-activity' => 'النشاط',
