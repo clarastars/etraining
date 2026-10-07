@@ -52,7 +52,15 @@
                 <td>{{ $row['tax'] }}</td>
                 <td>{{ $row['grand_total'] }}</td>
                 <td>{{ $row['status'] }}</td>
-                <td>{{ $row['masdr_start_label'] ?: '—' }}</td>
+                <td>
+                    {{ $row['masdr_start_label'] ?: '—' }}
+                    @if (! empty($row['masdr_employer_name']))
+                        <br>{{ $row['masdr_employer_name'] }}
+                    @endif
+                    @if ($row['masdr_wage'] !== null)
+                        <br>{{ __('words.masdr-wage') }}: {{ number_format((float) $row['masdr_wage'], 2) }}
+                    @endif
+                </td>
                 <td>{{ $row['invoice_date'] }}</td>
                 <td>{{ $row['manual_start_date'] }}</td>
                 <td>{{ $row['end_date'] }}</td>

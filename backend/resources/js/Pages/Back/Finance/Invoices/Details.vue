@@ -61,7 +61,19 @@
                         <td class="border px-2 py-1">{{ formatAmount(row.tax) }}</td>
                         <td class="border px-2 py-1">{{ formatAmount(row.grand_total) }}</td>
                         <td class="border px-2 py-1 whitespace-nowrap">{{ row.status }}</td>
-                        <td class="border px-2 py-1 whitespace-nowrap">{{ row.masdr_start_label || '—' }}</td>
+                        <td class="border px-2 py-1 masdr-cell">
+                            <div class="masdr-summary">
+                                <div class="font-medium whitespace-nowrap">{{ row.masdr_start_label || '—' }}</div>
+                                <div v-if="row.masdr_employer_name" class="masdr-meta">{{ row.masdr_employer_name }}</div>
+                                <div v-if="row.masdr_wage !== null && row.masdr_wage !== undefined" class="masdr-meta whitespace-nowrap">
+                                    {{ $t('words.masdr-wage') }}: {{ formatAmount(row.masdr_wage) }}
+                                </div>
+                                <div v-if="row.masdr_working_months !== null && row.masdr_working_months !== undefined && row.masdr_approx_ago" class="masdr-meta whitespace-nowrap">
+                                    {{ $t('words.masdr-working-months') }}: {{ row.masdr_working_months }} ({{ row.masdr_approx_ago }})
+                                </div>
+                            </div>
+                            <pre v-if="row.masdr_payload" class="masdr-tooltip">{{ formatMasdrPayload(row.masdr_payload) }}</pre>
+                        </td>
                         <td class="border px-2 py-1">{{ row.invoice_date }}</td>
                         <td class="border px-1 py-1">
                             <input type="date" class="form-input text-xs" :value="row.manual_start_date || ''" @change="saveCell(row, 'manual_start_date', $event.target.value)">
@@ -264,6 +276,13 @@
             numberValue(value) {
                 return value === null || value === undefined ? '' : value;
             },
+            formatMasdrPayload(payload) {
+                try {
+                    return JSON.stringify(payload, null, 2);
+                } catch (error) {
+                    return String(payload);
+                }
+            },
             formatAmount(value) {
                 if (value === null || value === undefined || value === '') {
                     return '';
@@ -456,6 +475,51 @@
 .invoice-details-scroll thead th:first-child {
     z-index: 20;
     right: 0;
+}
+
+.masdr-cell {
+    position: relative;
+    max-width: 14rem;
+    vertical-align: top;
+}
+
+.masdr-summary {
+    cursor: help;
+}
+
+.masdr-meta {
+    color: #6b7280;
+    font-size: 10px;
+    line-height: 1.2;
+    white-space: normal;
+}
+
+.masdr-tooltip {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 40;
+    width: 18rem;
+    max-height: 14rem;
+    margin: 0;
+    padding: 0.5rem;
+    overflow: auto;
+    background: #111827;
+    color: #f9fafb;
+    border-radius: 0.375rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+    font-size: 10px;
+    line-height: 1.35;
+    white-space: pre-wrap;
+    word-break: break-word;
+    direction: ltr;
+    text-align: left;
+}
+
+.masdr-cell:hover .masdr-tooltip,
+.masdr-cell:focus-within .masdr-tooltip {
+    display: block;
 }
 
 .invoice-details-scroll tfoot td {

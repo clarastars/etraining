@@ -189,7 +189,50 @@ class InvoiceDetailReportTest extends TestCase
         ]))->assertSuccessful()
             ->assertPropValue('rows', function (array $rows) {
                 $this->assertNull($rows[0]['masdr_start_date']);
+                $this->assertNull($rows[0]['masdr_payload']);
                 $this->assertNull($rows[0]['day_count']);
+            });
+    }
+
+    public function test_masdr_cell_uses_working_months_when_join_date_is_missing(): void
+    {
+        $company = $this->makeCompany('');
+        $company->name_ar = 'شركة شافي المتقدمة التجارية شركة شخص واحد';
+        $company->cr_number = null;
+        $company->save();
+
+        $trainee = $this->makeTrainee($company, '1086147004', null);
+        GosiEmployeeData::create([
+            'nin_or_iqama' => '1086147004',
+            'data' => [
+                'employmentStatusInfo' => [
+                    [
+                        'fullWage' => 5501,
+                        'employerName' => 'شركة شافي المتقدمة التجارية شركة شخص واحد',
+                        'workingMonths' => '17',
+                        'employmentStatus' => 'نشيط',
+                    ],
+                ],
+            ],
+        ]);
+        $this->makeInvoice($company, $trainee, '2026-05-01', Invoice::STATUS_PAID);
+
+        $this->get(route('back.finance.invoices.details', [
+            'company_id' => $company->id,
+            'date_from' => '2026-05-01',
+            'date_to' => '2026-05-31',
+        ]))->assertSuccessful()
+            ->assertPropValue('rows', function (array $rows) {
+                $this->assertNull($rows[0]['masdr_start_date']);
+                $this->assertSame(17, $rows[0]['masdr_working_months']);
+                $this->assertEquals(5501, $rows[0]['masdr_wage']);
+                $this->assertSame('شركة شافي المتقدمة التجارية شركة شخص واحد', $rows[0]['masdr_employer_name']);
+                $this->assertSame(__('words.masdr-approx-years-months-ago', [
+                    'years' => 1,
+                    'months' => 5,
+                ]), $rows[0]['masdr_approx_ago']);
+                $this->assertSame($rows[0]['masdr_approx_ago'], $rows[0]['masdr_start_label']);
+                $this->assertIsArray($rows[0]['masdr_payload']);
             });
     }
 

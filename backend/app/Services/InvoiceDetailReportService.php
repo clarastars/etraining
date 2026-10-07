@@ -109,6 +109,11 @@ class InvoiceDetailReportService
             'status' => $invoice->status_formatted,
             'masdr_start_date' => $masdr['date'] ?? null,
             'masdr_start_label' => $masdr['label'] ?? null,
+            'masdr_approx_ago' => $masdr['approx_ago'] ?? null,
+            'masdr_employer_name' => $masdr['employer_name'] ?? null,
+            'masdr_wage' => $masdr['wage'] ?? null,
+            'masdr_working_months' => $masdr['working_months'] ?? null,
+            'masdr_payload' => $masdr['payload'] ?? null,
             'invoice_date' => optional($invoice->from_date)->toDateString(),
             'manual_start_date' => $manualStart,
             'end_date' => $endDate,
@@ -174,7 +179,7 @@ class InvoiceDetailReportService
     }
 
     /**
-     * @return array{date: ?string, label: string}|null
+     * @return array<string, mixed>|null
      */
     private function masdrStartForInvoice(Invoice $invoice): ?array
     {
@@ -228,11 +233,11 @@ class InvoiceDetailReportService
     }
 
     /**
-     * @return array{date: ?string, label: string}|null
+     * @return array<string, mixed>|null
      */
     private function masdrStart(?Company $company, ?GosiEmployeeData $record): ?array
     {
-        if (! $company || ! $record || $company->cr_number === null || $company->cr_number === '') {
+        if (! $company || ! $record) {
             return null;
         }
 
@@ -245,15 +250,35 @@ class InvoiceDetailReportService
             $payload = [];
         }
 
-        $matches = collect($payload['employmentStatusInfo'] ?? [])
-            ->filter(function ($employment) use ($company) {
-                return is_array($employment)
-                    && $this->crMatches((string) $company->cr_number, $employment['commercialRegistrationNumber'] ?? null);
-            })
+        $employments = collect($payload['employmentStatusInfo'] ?? [])
+            ->filter(fn ($employment) => is_array($employment))
             ->values();
 
-        if ($matches->isEmpty()) {
+        if ($employments->isEmpty()) {
             return null;
+        }
+
+        $companyCr = $this->identityDigits((string) ($company->cr_number ?? ''));
+        if ($companyCr !== '') {
+            $matches = $employments
+                ->filter(function (array $employment) use ($company) {
+                    return $this->crMatches((string) $company->cr_number, $employment['commercialRegistrationNumber'] ?? null);
+                })
+                ->values();
+
+            if ($matches->isEmpty()) {
+                return null;
+            }
+        } else {
+            $matches = $employments
+                ->filter(function (array $employment) use ($company) {
+                    return $this->employerNameMatches($company->name_ar, $employment['employerName'] ?? null);
+                })
+                ->values();
+
+            if ($matches->isEmpty()) {
+                $matches = $employments;
+            }
         }
 
         $employment = $matches->first(function (array $row) {
@@ -262,36 +287,99 @@ class InvoiceDetailReportService
             return str_contains($status, 'نشيط') || str_contains($status, 'active');
         }) ?? $matches->first();
 
-        return $this->startLabel($employment);
+        return $this->presentMasdrEmployment($employment, $payload);
     }
 
     /**
      * @param  array<string, mixed>  $employment
-     * @return array{date: ?string, label: string}|null
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
      */
-    private function startLabel(array $employment): ?array
+    private function presentMasdrEmployment(array $employment, array $payload): array
     {
+        $date = null;
+        $label = null;
+
         $joining = $employment['dateOfJoining'] ?? null;
         if ($joining !== null && $joining !== '') {
-            $parsed = $this->parseDate((string) $joining);
-
-            return [
-                'date' => $parsed,
-                'label' => $parsed ?? (string) $joining,
-            ];
+            $date = $this->parseDate((string) $joining);
+            $label = $date ?? (string) $joining;
+        } else {
+            $salaryStart = $employment['salaryStartingDate'] ?? null;
+            if ($salaryStart !== null && $salaryStart !== '') {
+                $date = $this->parseDate((string) $salaryStart);
+                $label = $date ?? (string) $salaryStart;
+            }
         }
 
-        $salaryStart = $employment['salaryStartingDate'] ?? null;
-        if ($salaryStart === null || $salaryStart === '') {
-            return null;
+        $workingMonths = null;
+        if (isset($employment['workingMonths']) && $employment['workingMonths'] !== '' && is_numeric($employment['workingMonths'])) {
+            $workingMonths = (int) $employment['workingMonths'];
         }
 
-        $parsed = $this->parseDate((string) $salaryStart);
+        $approxAgo = $workingMonths !== null ? $this->approxAgoFromMonths($workingMonths) : null;
+        if ($label === null) {
+            $label = $approxAgo;
+        }
+
+        $wage = null;
+        if (isset($employment['fullWage']) && $employment['fullWage'] !== '' && is_numeric($employment['fullWage'])) {
+            $wage = (float) $employment['fullWage'];
+        }
+
+        $employerName = isset($employment['employerName']) && $employment['employerName'] !== ''
+            ? (string) $employment['employerName']
+            : null;
 
         return [
-            'date' => $parsed,
-            'label' => $parsed ?? (string) $salaryStart,
+            'date' => $date,
+            'label' => $label,
+            'approx_ago' => $approxAgo,
+            'employer_name' => $employerName,
+            'wage' => $wage,
+            'working_months' => $workingMonths,
+            'payload' => $payload,
         ];
+    }
+
+    private function approxAgoFromMonths(int $months): string
+    {
+        $months = max(0, $months);
+        $years = intdiv($months, 12);
+        $remainingMonths = $months % 12;
+
+        if ($years > 0 && $remainingMonths > 0) {
+            return __('words.masdr-approx-years-months-ago', [
+                'years' => $years,
+                'months' => $remainingMonths,
+            ]);
+        }
+
+        if ($years > 0) {
+            return __('words.masdr-approx-years-ago', [
+                'years' => $years,
+            ]);
+        }
+
+        return __('words.masdr-approx-months-ago', [
+            'months' => $months,
+        ]);
+    }
+
+    private function employerNameMatches(?string $companyName, $employerName): bool
+    {
+        $left = $this->normalizeName($companyName);
+        $right = $this->normalizeName($employerName === null ? '' : (string) $employerName);
+
+        return $left !== '' && $left === $right;
+    }
+
+    private function normalizeName(?string $value): string
+    {
+        $value = trim((string) $value);
+        $value = preg_replace('/\s+/u', ' ', $value) ?? '';
+
+        return mb_strtolower($value);
     }
 
     private function crMatches(string $companyCr, $employmentCr): bool
