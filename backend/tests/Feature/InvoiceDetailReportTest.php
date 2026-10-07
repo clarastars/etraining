@@ -44,6 +44,26 @@ class InvoiceDetailReportTest extends TestCase
         $this->actingAs($this->user);
     }
 
+    public function test_company_search_returns_matches_instead_of_every_company(): void
+    {
+        $match = $this->makeCompany('1010111222');
+        $match->name_ar = 'شركة البحث الخاصة';
+        $match->save();
+        $this->makeCompany('1010333444');
+
+        $this->get(route('back.finance.invoices.details.companies', ['search' => 'البحث']))
+            ->assertOk()
+            ->assertJsonCount(1)
+            ->assertJsonFragment([
+                'id' => $match->id,
+                'name_ar' => 'شركة البحث الخاصة',
+            ]);
+
+        $this->get(route('back.finance.invoices.details.companies', ['search' => 'ش']))
+            ->assertOk()
+            ->assertExactJson([]);
+    }
+
     public function test_route_rejects_users_without_permission(): void
     {
         $role = $this->user->roles()->first();

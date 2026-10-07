@@ -1,6 +1,6 @@
 <template>
     <app-layout>
-        <div class="px-6 mx-auto pt-6">
+        <div class="invoice-details-page">
             <breadcrumb-container
                 :crumbs="[
                     {title: 'dashboard', link: route('dashboard')},
@@ -9,37 +9,23 @@
                 ]"
             ></breadcrumb-container>
 
-            <form @submit.prevent="loadReport" class="grid grid-cols-12 gap-6">
-                <div class="col-span-12 sm:col-span-6 mt-5">
-                    <jet-label class="mb-2" for="company_id" :value="$t('words.company')" />
-                    <select v-model="form.company_id" name="company_id" id="company_id">
-                        <option value="">{{ $t('words.company') }}</option>
-                        <option v-for="company in companies" :key="company.id" :value="company.id">
-                            {{ company.name_ar }}
-                        </option>
-                    </select>
-                </div>
-                <div class="col-span-12 sm:col-span-2 mt-5">
-                    <jet-label class="mb-2" for="date_from" :value="$t('words.date-from')" />
-                    <input id="date_from" type="date" v-model="form.date_from" class="form-input rounded-md shadow-sm w-full" required>
-                </div>
-                <div class="col-span-12 sm:col-span-2 mt-5">
-                    <jet-label class="mb-2" for="date_to" :value="$t('words.date-to')" />
-                    <input id="date_to" type="date" v-model="form.date_to" class="form-input rounded-md shadow-sm w-full" required>
-                </div>
-                <div class="col-span-12 sm:col-span-2 mt-5 flex items-end">
-                    <button class="btn btn-gray" type="submit">{{ $t('words.search') }}</button>
-                </div>
+            <form @submit.prevent="loadReport" class="invoice-details-toolbar">
+                <company-search-select
+                    class="toolbar-company"
+                    v-model="selectedCompany"
+                    compact
+                    search-route="back.finance.invoices.details.companies"
+                    :placeholder="$t('words.company')"
+                />
+                <input id="date_from" type="date" v-model="form.date_from" class="toolbar-field" :aria-label="$t('words.date-from')" required>
+                <input id="date_to" type="date" v-model="form.date_to" class="toolbar-field" :aria-label="$t('words.date-to')" required>
+                <button class="toolbar-action" type="submit">{{ $t('words.search') }}</button>
+                <a v-if="localRows.length" class="toolbar-action" :href="exportUrl('back.finance.invoices.details.excel')">Excel</a>
+                <a v-if="localRows.length" class="toolbar-action" :href="exportUrl('back.finance.invoices.details.pdf')">PDF</a>
+                <span class="invoice-details-hint">{{ $t('words.invoice-details-hint') }}</span>
             </form>
 
-            <p class="text-sm text-gray-500 mt-4">{{ $t('words.invoice-details-hint') }}</p>
-
-            <div v-if="localRows.length" class="mt-4 flex gap-3">
-                <a class="btn btn-gray" :href="exportUrl('back.finance.invoices.details.excel')">Excel</a>
-                <a class="btn btn-gray" :href="exportUrl('back.finance.invoices.details.pdf')">PDF</a>
-            </div>
-
-            <div v-if="localRows.length" class="invoice-details-scroll mt-4 bg-white shadow rounded">
+            <div v-if="localRows.length" class="invoice-details-scroll bg-white shadow rounded">
                 <table class="min-w-max text-xs border-collapse">
                     <thead>
                     <tr class="bg-gray-100">
@@ -78,7 +64,7 @@
                         <td class="border px-2 py-1 whitespace-nowrap">{{ row.status }}</td>
                         <td class="border px-2 py-1 whitespace-nowrap">
                             <div>{{ row.masdr_start_label || '—' }}</div>
-                            <button type="button" class="text-blue-600 underline" @click="refreshMasdr(row)">
+                            <button type="button" class="copy-down" @click="refreshMasdr(row)">
                                 {{ $t('words.refresh-from-masdr') }}
                             </button>
                         </td>
@@ -88,7 +74,7 @@
                             <button
                                 v-if="canCopyDown(rowIndex)"
                                 type="button"
-                                class="block mt-1 text-blue-600 underline whitespace-nowrap"
+                                class="copy-down"
                                 :disabled="copyingDown"
                                 @click="copyDown('manual_start_date')"
                             >
@@ -100,7 +86,7 @@
                             <button
                                 v-if="canCopyDown(rowIndex)"
                                 type="button"
-                                class="block mt-1 text-blue-600 underline whitespace-nowrap"
+                                class="copy-down"
                                 :disabled="copyingDown"
                                 @click="copyDown('end_date')"
                             >
@@ -113,7 +99,7 @@
                             <button
                                 v-if="canCopyDown(rowIndex)"
                                 type="button"
-                                class="block mt-1 text-blue-600 underline whitespace-nowrap"
+                                class="copy-down"
                                 :disabled="copyingDown"
                                 @click="copyDown('full_salary')"
                             >
@@ -127,7 +113,7 @@
                             <button
                                 v-if="canCopyDown(rowIndex)"
                                 type="button"
-                                class="block mt-1 text-blue-600 underline whitespace-nowrap"
+                                class="copy-down"
                                 :disabled="copyingDown"
                                 @click="copyDown('full_reward')"
                             >
@@ -141,7 +127,7 @@
                             <button
                                 v-if="canCopyDown(rowIndex)"
                                 type="button"
-                                class="block mt-1 text-blue-600 underline whitespace-nowrap"
+                                class="copy-down"
                                 :disabled="copyingDown"
                                 @click="copyDown('full_fees')"
                             >
@@ -155,7 +141,7 @@
                             <button
                                 v-if="canCopyDown(rowIndex)"
                                 type="button"
-                                class="block mt-1 text-blue-600 underline whitespace-nowrap"
+                                class="copy-down"
                                 :disabled="copyingDown"
                                 @click="copyDown('full_refund')"
                             >
@@ -200,13 +186,12 @@
 </template>
 
 <script>
-    import JetLabel from '@/Jetstream/Label';
     import AppLayout from '@/Layouts/AppLayout';
     import BreadcrumbContainer from '@/Components/BreadcrumbContainer';
-    import 'selectize/dist/js/standalone/selectize.min';
+    import CompanySearchSelect from '@/Components/CompanySearchSelect';
 
     export default {
-        props: ['companies', 'filters', 'rows'],
+        props: ['company', 'filters', 'rows'],
         metaInfo() {
             return {
                 title: this.$t('words.invoices-details-report'),
@@ -214,13 +199,14 @@
         },
         components: {
             AppLayout,
-            JetLabel,
             BreadcrumbContainer,
+            CompanySearchSelect,
         },
         data() {
             return {
+                selectedCompany: this.company || null,
                 form: {
-                    company_id: this.filters.company_id || null,
+                    company_id: this.company ? this.company.id : (this.filters.company_id || null),
                     date_from: this.filters.date_from || new Date().toISOString().substring(0, 10),
                     date_to: this.filters.date_to || new Date().toISOString().substring(0, 10),
                 },
@@ -231,6 +217,13 @@
         watch: {
             rows(rows) {
                 this.localRows = rows || [];
+            },
+            company(company) {
+                this.selectedCompany = company || null;
+                this.form.company_id = company ? company.id : null;
+            },
+            selectedCompany(company) {
+                this.form.company_id = company ? company.id : null;
             },
         },
         computed: {
@@ -257,18 +250,6 @@
 
                 return totals;
             },
-        },
-        mounted() {
-            let vm = this;
-            $(document).ready(function () {
-                $('#company_id').selectize({
-                    sortField: 'text',
-                    maxOptions: 9999,
-                    onChange: function (value) {
-                        vm.form.company_id = value;
-                    }
-                });
-            });
         },
         methods: {
             loadReport() {
@@ -362,8 +343,75 @@
 </script>
 
 <style scoped>
+.invoice-details-page {
+    padding: 0.25rem 0.75rem 0;
+}
+
+.invoice-details-page >>> nav {
+    margin: 0 0 0.35rem;
+    font-size: 0.8125rem;
+}
+
+.invoice-details-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.4rem;
+}
+
+.toolbar-company {
+    flex: 1 1 14rem;
+    min-width: 12rem;
+    max-width: 22rem;
+}
+
+.toolbar-company >>> .company-search-input {
+    height: 2rem;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.toolbar-field {
+    height: 2rem;
+    width: 9.5rem;
+    padding: 0 0.4rem;
+    font-size: 0.8125rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    background: #fff;
+}
+
+.toolbar-action {
+    display: inline-flex;
+    align-items: center;
+    height: 2rem;
+    padding: 0 0.7rem;
+    border-radius: 0.375rem;
+    background: #4b5563;
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.toolbar-action:hover,
+.toolbar-action:focus {
+    background: #f97316;
+    color: #fff;
+}
+
+.invoice-details-hint {
+    flex: 1 1 12rem;
+    min-width: 10rem;
+    color: #6b7280;
+    font-size: 0.7rem;
+    line-height: 1.2;
+}
+
 .invoice-details-scroll {
-    max-height: calc(100vh - 12rem);
+    max-height: calc(100vh - 7.5rem);
     overflow-x: scroll;
     overflow-y: auto;
     scrollbar-color: #6b7280 #e5e7eb;
@@ -382,6 +430,40 @@
 
 .invoice-details-scroll::-webkit-scrollbar-track {
     background: #e5e7eb;
+}
+
+.invoice-details-scroll th,
+.invoice-details-scroll td {
+    padding: 2px 4px;
+    line-height: 1.2;
+}
+
+.invoice-details-scroll .form-input {
+    height: 1.5rem;
+    min-height: 0;
+    padding: 0 4px;
+    font-size: 11px;
+    line-height: 1.5rem;
+    border-radius: 0.25rem;
+}
+
+.copy-down {
+    display: block;
+    margin-top: 1px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #2563eb;
+    font-size: 10px;
+    line-height: 1.1;
+    text-decoration: underline;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.copy-down:disabled {
+    opacity: 0.5;
+    cursor: default;
 }
 
 .invoice-details-scroll thead th {

@@ -109,6 +109,10 @@ export default {
             type: Boolean,
             default: false,
         },
+        searchRoute: {
+            type: String,
+            default: 'back.companies.search',
+        },
     },
     data() {
         return {
@@ -163,7 +167,7 @@ export default {
             this.loading = true;
             this.showDropdown = true;
 
-            axios.get(route('back.companies.search'), {
+            axios.get(route(this.searchRoute), {
                 params: {
                     search: this.searchQuery,
                 },

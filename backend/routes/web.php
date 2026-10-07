@@ -953,6 +953,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function() {
             Route::post('invoices/bulk-approve-financial-department', [\App\Http\Controllers\Back\FinancialInvoicesController::class, 'bulkApproveFinancialDepartment'])->name('invoices.bulk-approve-finance-department');
             Route::post('invoices/excel/generate', [\App\Http\Controllers\Back\FinancialInvoicesController::class, 'generateExcel'])->name('invoices.excel.generate');
             Route::get('invoices/excel', [\App\Http\Controllers\Back\FinancialInvoicesController::class, 'excel'])->name('invoices.excel');
+            Route::get('invoices/details/companies', [\App\Http\Controllers\Back\InvoiceDetailReportController::class, 'companies'])->name('invoices.details.companies');
             Route::get('invoices/details/excel', [\App\Http\Controllers\Back\InvoiceDetailReportController::class, 'excel'])->name('invoices.details.excel');
             Route::get('invoices/details/pdf', [\App\Http\Controllers\Back\InvoiceDetailReportController::class, 'pdf'])->name('invoices.details.pdf');
             Route::patch('invoices/details/{invoice}', [\App\Http\Controllers\Back\InvoiceDetailReportController::class, 'update'])->name('invoices.details.update');

@@ -36,10 +36,36 @@ class InvoiceDetailReportController extends Controller
         }
 
         return Inertia::render('Back/Finance/Invoices/Details', [
-            'companies' => Company::query()->orderBy('name_ar')->get(),
+            'company' => $this->selectedCompany($request->input('company_id')),
             'filters' => $filters,
             'rows' => $rows,
         ]);
+    }
+
+    public function companies(Request $request)
+    {
+        $request->validate([
+            'search' => 'nullable|string|max:255',
+        ]);
+
+        $search = trim((string) $request->input('search', ''));
+
+        if (mb_strlen($search) < 2) {
+            return response()->json([]);
+        }
+
+        return response()->json(
+            Company::query()
+                ->select(['id', 'name_ar', 'name_en', 'code'])
+                ->where(function ($query) use ($search) {
+                    $query->where('name_ar', 'LIKE', '%'.$search.'%')
+                        ->orWhere('name_en', 'LIKE', '%'.$search.'%')
+                        ->orWhere('code', $search);
+                })
+                ->orderBy('name_ar')
+                ->limit(15)
+                ->get()
+        );
     }
 
     public function update(Request $request, string $invoice)
@@ -96,6 +122,17 @@ class InvoiceDetailReportController extends Controller
             'dateFrom' => $validated['date_from'],
             'dateTo' => $validated['date_to'],
         ])->setPaper('a3', 'landscape')->download('invoice-details-report.pdf');
+    }
+
+    private function selectedCompany(?string $companyId): ?Company
+    {
+        if ($companyId === null || $companyId === '') {
+            return null;
+        }
+
+        return Company::query()
+            ->select(['id', 'name_ar', 'name_en', 'code'])
+            ->find($companyId);
     }
 
     /**
