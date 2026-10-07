@@ -480,4 +480,17 @@
     z-index: 20;
     right: 0;
 }
+
+.invoice-details-scroll tfoot td {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    background: #f3f4f6;
+    box-shadow: inset 0 1px 0 #d1d5db;
+}
+
+.invoice-details-scroll tfoot td:first-child {
+    z-index: 30;
+    right: 0;
+}
 </style>
