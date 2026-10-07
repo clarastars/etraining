@@ -343,7 +343,15 @@
 
 <style scoped>
 .invoice-details-page {
-    padding: 0.25rem 0.75rem 0;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    height: calc(100vh - 4.5rem);
+    padding: 0.25rem 0.75rem 0.35rem;
+    overflow: hidden;
 }
 
 .invoice-details-page >>> nav {
@@ -355,6 +363,7 @@
     display: flex;
     align-items: center;
     gap: 0.4rem;
+    flex: 0 0 auto;
     flex-wrap: wrap;
     margin-bottom: 0.4rem;
 }
@@ -402,9 +411,12 @@
 }
 
 .invoice-details-scroll {
-    max-height: calc(100vh - 7.5rem);
-    overflow-x: scroll;
-    overflow-y: auto;
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+    overflow: scroll;
     scrollbar-color: #6b7280 #e5e7eb;
 }
 
