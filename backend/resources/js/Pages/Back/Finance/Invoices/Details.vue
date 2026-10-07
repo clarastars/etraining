@@ -22,7 +22,6 @@
                 <button class="toolbar-action" type="submit">{{ $t('words.search') }}</button>
                 <a v-if="localRows.length" class="toolbar-action" :href="exportUrl('back.finance.invoices.details.excel')">Excel</a>
                 <a v-if="localRows.length" class="toolbar-action" :href="exportUrl('back.finance.invoices.details.pdf')">PDF</a>
-                <span class="invoice-details-hint">{{ $t('words.invoice-details-hint') }}</span>
             </form>
 
             <div v-if="localRows.length" class="invoice-details-scroll bg-white shadow rounded">
@@ -400,14 +399,6 @@
 .toolbar-action:focus {
     background: #f97316;
     color: #fff;
-}
-
-.invoice-details-hint {
-    flex: 1 1 12rem;
-    min-width: 10rem;
-    color: #6b7280;
-    font-size: 0.7rem;
-    line-height: 1.2;
 }
 
 .invoice-details-scroll {
