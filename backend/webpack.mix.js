@@ -42,7 +42,11 @@ mix.js('resources/js/app.js', 'public/js')
                 'process.env': {
                     BUILD_VERSION: JSON.stringify(process.env.BUILD_VERSION || (new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 12)))
                 }
-            })
+            }),
+            new webpack.BannerPlugin({
+                banner: 'etraining-runtime',
+                test: /manifest\.js$/,
+            }),
         ]
     });
 
