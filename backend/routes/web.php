@@ -957,7 +957,6 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function() {
             Route::get('invoices/details/excel', [\App\Http\Controllers\Back\InvoiceDetailReportController::class, 'excel'])->name('invoices.details.excel');
             Route::get('invoices/details/pdf', [\App\Http\Controllers\Back\InvoiceDetailReportController::class, 'pdf'])->name('invoices.details.pdf');
             Route::patch('invoices/details/{invoice}', [\App\Http\Controllers\Back\InvoiceDetailReportController::class, 'update'])->name('invoices.details.update');
-            Route::post('invoices/details/{invoice}/refresh-masdr', [\App\Http\Controllers\Back\InvoiceDetailReportController::class, 'refreshMasdr'])->name('invoices.details.refresh-masdr');
             Route::get('invoices/details', [\App\Http\Controllers\Back\InvoiceDetailReportController::class, 'index'])->name('invoices.details');
             Route::get('invoices/{id}/upload-receipt-form', [\App\Http\Controllers\Back\FinancialInvoicesController::class, 'uploadReceiptForm'])->name('invoices.upload-receipt-form');
             Route::post('invoices/{id}/upload-receipt', [\App\Http\Controllers\Back\FinancialInvoicesController::class, 'uploadReceipt'])->name('invoices.upload-receipt');

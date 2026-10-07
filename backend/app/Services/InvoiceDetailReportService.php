@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Classes\GosiEmployee;
 use App\Models\Back\Company;
 use App\Models\Back\Invoice;
 use App\Models\Back\InvoiceDetailReportLine;
@@ -82,42 +81,6 @@ class InvoiceDetailReportService
             $line->fresh(),
             $this->suggestedSalary($invoice->company),
             $this->masdrStartForInvoice($invoice)
-        );
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function refreshMasdr(Invoice $invoice): array
-    {
-        $invoice->loadMissing(['trainee', 'company.contracts']);
-        $identity = $this->identityDigits(optional($invoice->trainee)->identity_number);
-
-        if (strlen($identity) !== 10) {
-            abort(422, __('words.masdr-identity-missing'));
-        }
-
-        try {
-            GosiEmployee::new($identity, [
-                'reason_collection' => true,
-            ])->get(true);
-        } catch (\Throwable $exception) {
-            report($exception);
-
-            if ($exception->getMessage() === 'Monthly request limit reached.') {
-                abort(422, __('words.masdr-monthly-limit'));
-            }
-
-            abort(422, __('words.masdr-refresh-failed'));
-        }
-
-        $line = InvoiceDetailReportLine::query()->where('invoice_id', $invoice->id)->first();
-
-        return $this->present(
-            $invoice,
-            $line,
-            $this->suggestedSalary($invoice->company),
-            $this->masdrStartForInvoice($invoice->fresh(['trainee', 'company']))
         );
     }
 

@@ -61,12 +61,7 @@
                         <td class="border px-2 py-1">{{ formatAmount(row.tax) }}</td>
                         <td class="border px-2 py-1">{{ formatAmount(row.grand_total) }}</td>
                         <td class="border px-2 py-1 whitespace-nowrap">{{ row.status }}</td>
-                        <td class="border px-2 py-1 whitespace-nowrap">
-                            <div>{{ row.masdr_start_label || '—' }}</div>
-                            <button type="button" class="copy-down" @click="refreshMasdr(row)">
-                                {{ $t('words.refresh-from-masdr') }}
-                            </button>
-                        </td>
+                        <td class="border px-2 py-1 whitespace-nowrap">{{ row.masdr_start_label || '—' }}</td>
                         <td class="border px-2 py-1">{{ row.invoice_date }}</td>
                         <td class="border px-1 py-1">
                             <input type="date" class="form-input text-xs" :value="row.manual_start_date || ''" @change="saveCell(row, 'manual_start_date', $event.target.value)">
@@ -317,24 +312,6 @@
                     .catch(() => {})
                     .finally(() => {
                         this.copyingDown = false;
-                    });
-            },
-            refreshMasdr(row) {
-                if (!window.confirm(this.$t('words.masdr-refresh-confirm'))) {
-                    return;
-                }
-                axios.post(route('back.finance.invoices.details.refresh-masdr', row.invoice_id))
-                    .then(response => {
-                        const index = this.localRows.findIndex(item => item.invoice_id === row.invoice_id);
-                        if (index !== -1) {
-                            this.$set(this.localRows, index, response.data);
-                        }
-                    })
-                    .catch(error => {
-                        const message = error.response && error.response.data && error.response.data.message
-                            ? error.response.data.message
-                            : this.$t('words.masdr-refresh-failed');
-                        alert(message);
                     });
             },
         },

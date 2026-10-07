@@ -94,13 +94,6 @@ class InvoiceDetailReportController extends Controller
         );
     }
 
-    public function refreshMasdr(string $invoice)
-    {
-        $invoiceModel = Invoice::query()->findOrFail($invoice);
-
-        return response()->json($this->reports->refreshMasdr($invoiceModel));
-    }
-
     public function excel(Request $request)
     {
         $validated = $this->validateFilters($request);
