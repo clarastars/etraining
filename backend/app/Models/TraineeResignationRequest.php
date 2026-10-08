@@ -30,7 +30,7 @@ class TraineeResignationRequest extends Model
     public function getStatusTextAttribute()
     {
         return match($this->status) {
-            'pending' => 'في الانتظار',
+            'pending' => 'تم',
             'approved' => 'موافق عليه',
             'rejected' => 'مرفوض',
             default => 'غير محدد'
