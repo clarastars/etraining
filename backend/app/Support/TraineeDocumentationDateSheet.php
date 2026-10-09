@@ -99,17 +99,22 @@ class TraineeDocumentationDateSheet
 
     private function date(Cell $cell): ?string
     {
+        try {
+            return $this->acceptedDate($this->parseCellDate($cell));
+        } catch (\Throwable $exception) {
+            return null;
+        }
+    }
+
+    private function parseCellDate(Cell $cell): ?string
+    {
         $value = $cell->getValue();
 
         if ($value instanceof \DateTimeInterface) {
             return Carbon::instance(\DateTime::createFromInterface($value))->toDateString();
         }
 
-        if (is_numeric($value) && ExcelDate::isDateTime($cell)) {
-            return Carbon::instance(ExcelDate::excelToDateTimeObject((float) $value))->toDateString();
-        }
-
-        if (is_numeric($value) && (float) $value > 20000 && (float) $value < 80000) {
+        if (is_numeric($value) && (ExcelDate::isDateTime($cell) || ((float) $value > 20000 && (float) $value < 80000))) {
             return Carbon::instance(ExcelDate::excelToDateTimeObject((float) $value))->toDateString();
         }
 
@@ -131,5 +136,16 @@ class TraineeDocumentationDateSheet
         }
 
         return null;
+    }
+
+    private function acceptedDate(?string $date): ?string
+    {
+        if ($date === null || preg_match('/^(\d{4})-/', $date, $matches) !== 1) {
+            return null;
+        }
+
+        $year = (int) $matches[1];
+
+        return $year >= 1990 && $year <= 2100 ? $date : null;
     }
 }
