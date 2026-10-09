@@ -26,7 +26,7 @@ class SyncTraineeDocumentationDatesCommand extends Command
             return self::FAILURE;
         }
 
-        $path = storage_path('app/trainee-documentation-dates.xlsx');
+        $path = tempnam(sys_get_temp_dir(), 'documentation-dates').'.xlsx';
         $this->download($fileId, $path);
 
         try {
@@ -99,6 +99,18 @@ class SyncTraineeDocumentationDatesCommand extends Command
             'supportsAllDrives' => true,
         ]);
 
-        file_put_contents($path, $response->getBody()->getContents());
+        $handle = fopen($path, 'wb');
+        if ($handle === false) {
+            throw new \RuntimeException('Could not write the documentation workbook.');
+        }
+
+        try {
+            $body = $response->getBody();
+            while (! $body->eof()) {
+                fwrite($handle, $body->read(1024 * 1024));
+            }
+        } finally {
+            fclose($handle);
+        }
     }
 }

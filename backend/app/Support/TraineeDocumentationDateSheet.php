@@ -17,7 +17,8 @@ class TraineeDocumentationDateSheet
      */
     public function rows(string $path): array
     {
-        $book = IOFactory::load($path);
+        $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader('Xlsx');
+        $book = $reader->load($path);
         $dates = [];
 
         foreach ($book->getWorksheetIterator() as $sheet) {
