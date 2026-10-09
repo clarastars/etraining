@@ -8,6 +8,7 @@ use App\Models\Back\Company;
 use App\Models\Back\Invoice;
 use App\Models\Back\InvoiceDetailReportLine;
 use App\Models\GosiEmployeeData;
+use App\Models\TraineeDocumentationDate;
 use App\Support\ExcelDays360;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -46,13 +47,19 @@ class InvoiceDetailReportService
             ->keyBy('invoice_id');
 
         $gosiByIdentity = $this->gosiByIdentity($invoices);
+        $documentationDates = $this->documentationDates($invoices);
 
-        return $invoices->map(function (Invoice $invoice) use ($lines, $gosiByIdentity, $suggestedSalary, $company) {
+        return $invoices->map(function (Invoice $invoice) use ($lines, $gosiByIdentity, $documentationDates, $suggestedSalary, $company) {
+            $identity = $this->identityDigits(optional($invoice->trainee)->identity_number);
+
             return $this->present(
                 $invoice,
                 $lines->get($invoice->id),
                 $suggestedSalary,
-                $this->masdrStart($company, $gosiByIdentity->get($this->identityDigits(optional($invoice->trainee)->identity_number)))
+                $this->withDocumentationDate(
+                    $this->masdrStart($company, $gosiByIdentity->get($identity)),
+                    $documentationDates->get($identity)
+                )
             );
         })->all();
     }
@@ -199,7 +206,50 @@ class InvoiceDetailReportService
                 return $this->identityDigits($row->nin_or_iqama) === $identity;
             });
 
-        return $this->masdrStart($invoice->company, $record);
+        return $this->withDocumentationDate(
+            $this->masdrStart($invoice->company, $record),
+            TraineeDocumentationDate::query()->where('identity_number', $identity)->first()
+        );
+    }
+
+    /**
+     * @param  Collection<int, Invoice>  $invoices
+     * @return Collection<string, TraineeDocumentationDate>
+     */
+    private function documentationDates(Collection $invoices): Collection
+    {
+        $identities = $invoices
+            ->map(fn (Invoice $invoice) => $this->identityDigits(optional($invoice->trainee)->identity_number))
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($identities->isEmpty()) {
+            return collect();
+        }
+
+        return TraineeDocumentationDate::query()
+            ->whereIn('identity_number', $identities)
+            ->get()
+            ->keyBy('identity_number');
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $masdr
+     * @return array<string, mixed>|null
+     */
+    private function withDocumentationDate(?array $masdr, ?TraineeDocumentationDate $record): ?array
+    {
+        if ($record === null || $record->documented_on === null) {
+            return $masdr;
+        }
+
+        $masdr ??= [];
+        $date = $record->documented_on->toDateString();
+        $masdr['date'] = $date;
+        $masdr['label'] = $date;
+
+        return $masdr;
     }
 
     /**

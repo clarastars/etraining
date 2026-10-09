@@ -45,6 +45,7 @@ return [
         'client_email' => env('GOOGLE_DRIVE_CLIENT_EMAIL'),
         'client_id' => env('GOOGLE_DRIVE_CLIENT_ID'),
         'client_x509_cert_url' => env('GOOGLE_DRIVE_CLIENT_X509_CERT_URL'),
+        'joining_dates_file_id' => env('GOOGLE_DRIVE_JOINING_DATES_FILE_ID', '1u0AzPSmpPI7MiKgZVIh7VX2_NyEYHMrs'),
         // Cloud Vision OCR for trainee identity cards (separate service account).
         'vision_identity_ocr' => env('GOOGLE_VISION_IDENTITY_OCR', false),
         'vision' => [

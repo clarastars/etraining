@@ -10,6 +10,7 @@ use App\Models\Back\CompanyContract;
 use App\Models\Back\Invoice;
 use App\Models\Back\Trainee;
 use App\Models\GosiEmployeeData;
+use App\Models\TraineeDocumentationDate;
 use App\Models\User;
 use Barryvdh\Snappy\Facades\SnappyPdf;
 use Illuminate\Foundation\Testing\WithFaker;
@@ -233,6 +234,30 @@ class InvoiceDetailReportTest extends TestCase
                 ]), $rows[0]['masdr_approx_ago']);
                 $this->assertSame($rows[0]['masdr_approx_ago'], $rows[0]['masdr_start_label']);
                 $this->assertIsArray($rows[0]['masdr_payload']);
+            });
+    }
+
+    public function test_sheet_uses_cached_documentation_date_for_the_masdr_column(): void
+    {
+        $company = $this->makeCompany('1010999888');
+        $trainee = $this->makeTrainee($company, '1104839079', null);
+        TraineeDocumentationDate::query()->create([
+            'identity_number' => '1104839079',
+            'documented_on' => '2026-01-15',
+            'source_sheet' => '2026',
+            'synced_at' => now(),
+        ]);
+        $this->makeInvoice($company, $trainee, '2026-05-01', Invoice::STATUS_PAID);
+
+        $this->get(route('back.finance.invoices.details', [
+            'company_id' => $company->id,
+            'date_from' => '2026-05-01',
+            'date_to' => '2026-05-31',
+        ]))->assertSuccessful()
+            ->assertPropValue('rows', function (array $rows) {
+                $this->assertSame('2026-01-15', $rows[0]['masdr_start_date']);
+                $this->assertSame('2026-01-15', $rows[0]['masdr_start_label']);
+                $this->assertNull($rows[0]['manual_start_date']);
             });
     }
 
