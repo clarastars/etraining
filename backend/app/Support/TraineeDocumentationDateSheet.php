@@ -119,7 +119,12 @@ class TraineeDocumentationDateSheet
         }
 
         foreach (['j/n/Y', 'd/m/Y', 'j-n-Y', 'd-m-Y', 'Y-m-d'] as $format) {
-            $parsed = Carbon::createFromFormat('!'.$format, $text);
+            try {
+                $parsed = Carbon::createFromFormat('!'.$format, $text);
+            } catch (\Throwable $exception) {
+                continue;
+            }
+
             if ($parsed instanceof Carbon) {
                 return $parsed->toDateString();
             }
