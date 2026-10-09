@@ -199,7 +199,7 @@ return [
     'view-whatsapp-reports' => 'عرض تقارير واتساب',
     'view-financial-invoices-details' => 'عرض تقرير الفواتير (تفاصيل)',
     'invoices-details-report' => 'تقرير الفواتير (تفاصيل)',
-    'masdr-start-date' => 'تاريخ المباشرة (مصدر)',
+    'masdr-start-date' => 'تاريخ المباشرة',
     'masdr-wage' => 'الأجر',
     'masdr-working-months' => 'أشهر العمل',
     'masdr-approx-months-ago' => 'حوالي :months شهراً',

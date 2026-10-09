@@ -199,7 +199,7 @@ return [
     'view-whatsapp-reports' => 'View WhatsApp reports',
     'view-financial-invoices-details' => 'View invoice details report',
     'invoices-details-report' => 'Invoice details report',
-    'masdr-start-date' => 'Start date (Masdr)',
+    'masdr-start-date' => 'Start date',
     'masdr-wage' => 'Wage',
     'masdr-working-months' => 'Working months',
     'masdr-approx-months-ago' => '≈ :months months ago',
