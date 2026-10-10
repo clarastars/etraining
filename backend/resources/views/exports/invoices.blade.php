@@ -12,6 +12,7 @@
         <th style="border:1px solid black;background-color:#a0a0a0;width:50px; text-align:center"><strong>{{ __('words.trainee') }}</strong></th>
         <th style="border:1px solid black;background-color:#a0a0a0;width:50px; text-align:center"><strong>{{ __('words.email') }}</strong></th>
         <th style="border:1px solid black;background-color:#a0a0a0;width:50px; text-align:center"><strong>{{ __('words.identity_number') }}</strong></th>
+        <th style="border:1px solid black;background-color:#a0a0a0;width:50px; text-align:center"><strong>{{ __('words.established-fees') }}</strong></th>
         <th style="border:1px solid black;background-color:#a0a0a0;width:50px; text-align:center"><strong>{{ __('words.subtotal') }}</strong></th>
         <th style="border:1px solid black;background-color:#a0a0a0;width:50px; text-align:center"><strong>{{ __('words.tax') }}</strong></th>
         <th style="border:1px solid black;background-color:#a0a0a0;width:50px; text-align:center"><strong>{{ __('words.grand-total') }}</strong></th>
@@ -34,6 +35,7 @@
             <td style="border:1px solid black;">{{ $invoice->trainee->name }}</td>
             <td style="border:1px solid black;">{{ $invoice->trainee->email }}</td>
             <td style="border:1px solid black;">{{ $invoice->trainee->identity_number }}</td>
+            <td style="border:1px solid black;">{{ optional($invoice->trainee)->override_training_costs }}</td>
             <td style="border:1px solid black;">{{ $invoice->sub_total }}</td>
             <td style="border:1px solid black;">{{ $invoice->tax }}</td>
             <td style="border:1px solid black;">{{ $invoice->grand_total }}</td>
