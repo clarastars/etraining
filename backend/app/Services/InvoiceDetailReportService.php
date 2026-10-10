@@ -131,6 +131,7 @@ class InvoiceDetailReportService
             'full_reward' => $fullReward,
             'daily_reward' => $this->daily($fullReward),
             'reward_due' => $this->due($fullReward, $dayCount),
+            'established_fees' => $this->establishedFees($invoice),
             'full_fees' => $fullFees,
             'daily_fees' => $this->daily($fullFees),
             'fees_due' => $this->due($fullFees, $dayCount),
@@ -183,6 +184,13 @@ class InvoiceDetailReportService
         $reward = optional($invoice->trainee)->platform_reward;
 
         return $reward === null ? null : (float) $reward;
+    }
+
+    private function establishedFees(Invoice $invoice): ?float
+    {
+        $fees = optional($invoice->trainee)->override_training_costs;
+
+        return $fees === null || $fees === '' ? null : (float) $fees;
     }
 
     /**

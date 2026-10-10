@@ -214,6 +214,7 @@ return [
     'full-reward' => 'Full reward',
     'daily-reward-cost' => 'Daily reward cost',
     'reward-due' => 'Reward',
+    'established-fees' => 'Established fees',
     'full-fees' => 'Full fees',
     'daily-fees-cost' => 'Daily fees cost',
     'training-fees-due' => 'Training fees',

@@ -45,6 +45,7 @@
                         <th class="border px-2 py-2">{{ $t('words.full-reward') }}</th>
                         <th class="border px-2 py-2">{{ $t('words.daily-reward-cost') }}</th>
                         <th class="border px-2 py-2">{{ $t('words.reward-due') }}</th>
+                        <th class="border px-2 py-2">{{ $t('words.established-fees') }}</th>
                         <th class="border px-2 py-2">{{ $t('words.full-fees') }}</th>
                         <th class="border px-2 py-2">{{ $t('words.daily-fees-cost') }}</th>
                         <th class="border px-2 py-2">{{ $t('words.training-fees-due') }}</th>
@@ -128,6 +129,7 @@
                         </td>
                         <td class="border px-2 py-1 bg-gray-50">{{ formatAmount(row.daily_reward) }}</td>
                         <td class="border px-2 py-1 bg-gray-50">{{ formatAmount(row.reward_due) }}</td>
+                        <td class="border px-2 py-1 bg-gray-50">{{ formatAmount(row.established_fees) }}</td>
                         <td class="border px-1 py-1">
                             <input type="number" min="0" step="0.01" class="form-input text-xs w-24" :value="numberValue(row.full_fees)" @change="saveCell(row, 'full_fees', $event.target.value)">
                             <button
@@ -177,6 +179,7 @@
                         <td class="border px-2 py-2">{{ formatTotal('full_reward') }}</td>
                         <td class="border px-2 py-2">{{ formatTotal('daily_reward') }}</td>
                         <td class="border px-2 py-2">{{ formatTotal('reward_due') }}</td>
+                        <td class="border px-2 py-2">{{ formatTotal('established_fees') }}</td>
                         <td class="border px-2 py-2">{{ formatTotal('full_fees') }}</td>
                         <td class="border px-2 py-2">{{ formatTotal('daily_fees') }}</td>
                         <td class="border px-2 py-2">{{ formatTotal('fees_due') }}</td>
@@ -238,6 +241,7 @@
                     'sub_total', 'tax', 'grand_total', 'day_count',
                     'full_salary', 'daily_salary', 'salary_due',
                     'full_reward', 'daily_reward', 'reward_due',
+                    'established_fees',
                     'full_fees', 'daily_fees', 'fees_due',
                     'full_refund', 'daily_refund', 'refund_due',
                 ];

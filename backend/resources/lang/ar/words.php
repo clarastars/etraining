@@ -214,6 +214,7 @@ return [
     'full-reward' => 'المكافأة الكاملة',
     'daily-reward-cost' => 'تكلفة اليوم للمكافأة',
     'reward-due' => 'المكافأة',
+    'established-fees' => 'الرسوم المثبتة',
     'full-fees' => 'الرسوم الكاملة',
     'daily-fees-cost' => 'تكلفة اليوم للرسوم',
     'training-fees-due' => 'رسوم التدريب',

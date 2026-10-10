@@ -40,6 +40,7 @@ class InvoiceDetailsSheetExport implements FromArray, WithEvents
             __('words.full-reward'),
             __('words.daily-reward-cost'),
             __('words.reward-due'),
+            __('words.established-fees'),
             __('words.full-fees'),
             __('words.daily-fees-cost'),
             __('words.training-fees-due'),
@@ -67,6 +68,7 @@ class InvoiceDetailsSheetExport implements FromArray, WithEvents
                 $row['full_reward'],
                 $row['daily_reward'],
                 $row['reward_due'],
+                $row['established_fees'],
                 $row['full_fees'],
                 $row['daily_fees'],
                 $row['fees_due'],
@@ -85,7 +87,7 @@ class InvoiceDetailsSheetExport implements FromArray, WithEvents
             AfterSheet::class => function (AfterSheet $event): void {
                 $sheet = $event->sheet->getDelegate();
                 $sheet->setRightToLeft(true);
-                $sheet->getStyle('A1:W1')->getFont()->setBold(true);
+                $sheet->getStyle('A1:X1')->getFont()->setBold(true);
 
                 foreach ($this->rows as $index => $row) {
                     $line = $index + 2;
@@ -100,10 +102,10 @@ class InvoiceDetailsSheetExport implements FromArray, WithEvents
                     $sheet->setCellValue('N'.$line, '=IF(OR(K'.$line.'="",M'.$line.'=""),"",M'.$line.'*K'.$line.')');
                     $sheet->setCellValue('P'.$line, '=IF(O'.$line.'="","",O'.$line.'/30)');
                     $sheet->setCellValue('Q'.$line, '=IF(OR(K'.$line.'="",P'.$line.'=""),"",P'.$line.'*K'.$line.')');
-                    $sheet->setCellValue('S'.$line, '=IF(R'.$line.'="","",R'.$line.'/30)');
-                    $sheet->setCellValue('T'.$line, '=IF(OR(K'.$line.'="",S'.$line.'=""),"",S'.$line.'*K'.$line.')');
-                    $sheet->setCellValue('V'.$line, '=IF(U'.$line.'="","",U'.$line.'/30)');
-                    $sheet->setCellValue('W'.$line, '=IF(OR(K'.$line.'="",V'.$line.'=""),"",V'.$line.'*K'.$line.')');
+                    $sheet->setCellValue('T'.$line, '=IF(S'.$line.'="","",S'.$line.'/30)');
+                    $sheet->setCellValue('U'.$line, '=IF(OR(K'.$line.'="",T'.$line.'=""),"",T'.$line.'*K'.$line.')');
+                    $sheet->setCellValue('W'.$line, '=IF(V'.$line.'="","",V'.$line.'/30)');
+                    $sheet->setCellValue('X'.$line, '=IF(OR(K'.$line.'="",W'.$line.'=""),"",W'.$line.'*K'.$line.')');
                 }
 
                 if ($this->rows === []) {
@@ -114,11 +116,11 @@ class InvoiceDetailsSheetExport implements FromArray, WithEvents
                 $totalRow = $last + 1;
                 $sheet->setCellValue('A'.$totalRow, __('words.total'));
 
-                foreach (['C', 'D', 'E', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W'] as $column) {
+                foreach (['C', 'D', 'E', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X'] as $column) {
                     $sheet->setCellValue($column.$totalRow, '=SUM('.$column.'2:'.$column.$last.')');
                 }
 
-                $sheet->getStyle('A'.$totalRow.':W'.$totalRow)->getFont()->setBold(true);
+                $sheet->getStyle('A'.$totalRow.':X'.$totalRow)->getFont()->setBold(true);
             },
         ];
     }

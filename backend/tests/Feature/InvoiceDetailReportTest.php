@@ -261,6 +261,25 @@ class InvoiceDetailReportTest extends TestCase
             });
     }
 
+    public function test_sheet_shows_trainee_established_fees_when_set(): void
+    {
+        $company = $this->makeCompany('1010999888');
+        $trainee = $this->makeTrainee($company, '1104839079', null);
+        $trainee->override_training_costs = 2300;
+        $trainee->save();
+        $this->makeInvoice($company, $trainee, '2026-05-01', Invoice::STATUS_PAID);
+
+        $this->get(route('back.finance.invoices.details', [
+            'company_id' => $company->id,
+            'date_from' => '2026-05-01',
+            'date_to' => '2026-05-31',
+        ]))->assertSuccessful()
+            ->assertPropValue('rows', function (array $rows) {
+                $this->assertEquals(2300, $rows[0]['established_fees']);
+                $this->assertNull($rows[0]['full_fees']);
+            });
+    }
+
     public function test_excel_export_keeps_days360_formulas(): void
     {
         $company = $this->makeCompany('1010999888');
@@ -295,7 +314,7 @@ class InvoiceDetailReportTest extends TestCase
         $this->assertStringContainsString('DAYS360', $xml);
         $this->assertStringContainsString('SUM(C2:C2)', $xml);
         $this->assertStringContainsString('SUM(N2:N2)', $xml);
-        $this->assertStringContainsString('SUM(W2:W2)', $xml);
+        $this->assertStringContainsString('SUM(X2:X2)', $xml);
     }
 
     public function test_pdf_export_uses_the_saved_sheet(): void

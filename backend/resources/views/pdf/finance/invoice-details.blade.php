@@ -35,6 +35,7 @@
             <th>{{ __('words.full-reward') }}</th>
             <th>{{ __('words.daily-reward-cost') }}</th>
             <th>{{ __('words.reward-due') }}</th>
+            <th>{{ __('words.established-fees') }}</th>
             <th>{{ __('words.full-fees') }}</th>
             <th>{{ __('words.daily-fees-cost') }}</th>
             <th>{{ __('words.training-fees-due') }}</th>
@@ -71,6 +72,7 @@
                 <td>{{ $row['full_reward'] }}</td>
                 <td>{{ $row['daily_reward'] !== null ? number_format($row['daily_reward'], 2) : '' }}</td>
                 <td>{{ $row['reward_due'] !== null ? number_format($row['reward_due'], 2) : '' }}</td>
+                <td>{{ $row['established_fees'] !== null ? number_format((float) $row['established_fees'], 2) : '' }}</td>
                 <td>{{ $row['full_fees'] }}</td>
                 <td>{{ $row['daily_fees'] !== null ? number_format($row['daily_fees'], 2) : '' }}</td>
                 <td>{{ $row['fees_due'] !== null ? number_format($row['fees_due'], 2) : '' }}</td>
@@ -85,6 +87,7 @@
                 'sub_total', 'tax', 'grand_total', 'day_count',
                 'full_salary', 'daily_salary', 'salary_due',
                 'full_reward', 'daily_reward', 'reward_due',
+                'established_fees',
                 'full_fees', 'daily_fees', 'fees_due',
                 'full_refund', 'daily_refund', 'refund_due',
             ];
@@ -119,6 +122,7 @@
             <th>{{ $money('full_reward') }}</th>
             <th>{{ $money('daily_reward') }}</th>
             <th>{{ $money('reward_due') }}</th>
+            <th>{{ $money('established_fees') }}</th>
             <th>{{ $money('full_fees') }}</th>
             <th>{{ $money('daily_fees') }}</th>
             <th>{{ $money('fees_due') }}</th>
