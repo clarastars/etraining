@@ -136,6 +136,8 @@ const routeFallbacks = {
     'back.training-disclosure.requests.show': '/back/training-disclosure/requests/{trainingDisclosureRequest}',
     'back.training-disclosure.requests.update': '/back/training-disclosure/requests/{trainingDisclosureRequest}',
     'back.training-disclosure.requests.destroy': '/back/training-disclosure/requests/{trainingDisclosureRequest}',
+    'back.trainees.attachments.exclusion-file': '/back/trainees/{trainee_id}/attachments/exclusion-file',
+    'back.trainees.attachments.exclusion-file.destroy': '/back/trainees/{trainee_id}/attachments/exclusion-file',
 };
 
 function resolveRouteFallback(name, params = {}) {
@@ -153,6 +155,7 @@ function resolveRouteFallback(name, params = {}) {
         id = params[0];
     } else if (params && typeof params === 'object') {
         id = params.id
+            || params.trainee_id
             || params.trainingDisclosureRequest
             || params.training_disclosure_request
             || Object.values(params)[0];
@@ -165,6 +168,23 @@ function resolveRouteFallback(name, params = {}) {
     }
 
     return url;
+}
+
+if (typeof window.route === 'function' && !window.route.__withFallback) {
+    const originalRoute = window.route.bind(window);
+    const routeWithFallback = function (name, params, absolute, config) {
+        try {
+            return originalRoute(name, params, absolute, config);
+        } catch (error) {
+            const fallback = resolveRouteFallback(name, params);
+            if (fallback !== null) {
+                return fallback;
+            }
+            throw error;
+        }
+    };
+    routeWithFallback.__withFallback = true;
+    window.route = routeWithFallback;
 }
 
 function mergeZiggyRoutes(ziggy) {
