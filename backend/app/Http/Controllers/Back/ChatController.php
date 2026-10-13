@@ -1649,6 +1649,7 @@ class ChatController extends Controller
             'non_registration_proof' => 'non-registration-proof',
             'gosi_certificate' => 'gosi-certificate',
             'qiwa_contract' => 'qiwa-contract',
+            'exclusion_file' => 'exclusion-file',
         ];
 
         $mediaByCollection = $trainee->media()

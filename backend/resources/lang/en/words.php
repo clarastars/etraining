@@ -135,6 +135,7 @@ return [
     'bank-account-photocopy' => 'Bank account photocopy',
     'gosi-certificate' => 'GOSI certificate',
     'qiwa-contract' => 'Qiwa contract',
+    'exclusion-file' => 'Exclusion file',
     'download' => 'Download',
     'open-new-instructor-file' => 'Open a new instructor file',
     'open-new-instructor-file-description' => 'Here you can open a new instructor file and upload all required documents.',

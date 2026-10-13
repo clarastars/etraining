@@ -1460,6 +1460,34 @@
             :options="dropzoneOptionsQiwaContract"
           ></vue-dropzone>
         </div>
+
+        <div v-if="canViewSpecialDocuments">
+          <jet-label :value="$t('words.exclusion-file')" class="mb-2" />
+
+          <div
+            class="bg-white border-2 rounder-lg flex flex-col justify-center items-center min-container-upload"
+            v-if="trainee.exclusion_file_copy_url"
+          >
+            <a
+              class="bg-gray-700 text-white font-semibold p-2 text-center w-1/2 rounded my-1"
+              target="_blank"
+              :href="trainee.exclusion_file_copy_url"
+              >{{ $t("words.download") }}</a
+            >
+            <button
+              class="bg-red-500 text-white font-semibold p-2 text-center w-1/2 rounded my-1"
+              @click="deleteExclusionFile"
+            >
+              {{ $t("words.delete") }}
+            </button>
+          </div>
+          <vue-dropzone
+            v-else
+            id="dropzoneExclusionFile"
+            @vdropzone-sending="sendingCsrf"
+            :options="dropzoneOptionsExclusionFile"
+          ></vue-dropzone>
+        </div>
       </div>
       </div>
 
@@ -1776,6 +1804,16 @@ export default {
       dropzoneOptionsQiwaContract: {
         destroyDropzone: false,
         url: route("back.trainees.attachments.qiwa-contract", {
+          trainee_id: this.trainee.id,
+        }),
+        dictDefaultMessage:
+          `<ion-icon name='cloud-upload-outline' class='text-red-500' size='large'></ion-icon><br/> ${this.$t("words.upload-files-here")}`,
+        thumbnailWidth: 150,
+        maxFilesize: 20,
+      },
+      dropzoneOptionsExclusionFile: {
+        destroyDropzone: false,
+        url: route("back.trainees.attachments.exclusion-file", {
           trainee_id: this.trainee.id,
         }),
         dictDefaultMessage:
@@ -2217,6 +2255,15 @@ export default {
       if (confirm(this.$t("words.are-you-sure"))) {
         this.$inertia.delete(
           route("back.trainees.attachments.qiwa-contract.destroy", {
+            trainee_id: this.trainee.id,
+          })
+        );
+      }
+    },
+    deleteExclusionFile() {
+      if (confirm(this.$t("words.are-you-sure"))) {
+        this.$inertia.delete(
+          route("back.trainees.attachments.exclusion-file.destroy", {
             trainee_id: this.trainee.id,
           })
         );

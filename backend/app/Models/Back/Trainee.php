@@ -108,6 +108,7 @@ class Trainee extends Model implements HasMedia, SearchableLabels, Auditable
         'cv_url',
         'gosi_certificate_copy_url',
         'qiwa_contract_copy_url',
+        'exclusion_file_copy_url',
         'non_registration_proof_copy_url',
         'name_selectable',
         'show_url',
@@ -479,6 +480,7 @@ class Trainee extends Model implements HasMedia, SearchableLabels, Auditable
             'non-registration-proof' => 'words.non-registration-proof',
             'gosi-certificate' => 'words.gosi-certificate',
             'qiwa-contract' => 'words.qiwa-contract',
+            'exclusion-file' => 'words.exclusion-file',
             'general_files' => 'words.files',
         ];
 
@@ -567,6 +569,11 @@ class Trainee extends Model implements HasMedia, SearchableLabels, Auditable
     public function getQiwaContractCopyUrlAttribute()
     {
         return $this->getCopyUrl('qiwa-contract');
+    }
+
+    public function getExclusionFileCopyUrlAttribute()
+    {
+        return $this->getCopyUrl('exclusion-file');
     }
 
     public function getNonRegistrationProofCopyUrlAttribute()

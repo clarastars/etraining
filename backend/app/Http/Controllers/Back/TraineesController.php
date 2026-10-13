@@ -328,6 +328,7 @@ class TraineesController extends Controller
                 'cv_url' => null,
                 'gosi_certificate_copy_url' => null,
                 'qiwa_contract_copy_url' => null,
+                'exclusion_file_copy_url' => null,
                 'non_registration_proof_copy_url' => null,
             ];
 
@@ -812,6 +813,44 @@ class TraineesController extends Controller
     {
         $trainee = Trainee::withTrashed()->findOrFail($trainee_id);
         $trainee->deleteMediaCollectionWithAudit('qiwa-contract');
+
+        return response()->redirectTo($trainee->show_url);
+    }
+
+    /**
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param                          $trainee_id
+     *
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function storeExclusionFile(Request $request, $trainee_id)
+    {
+        $request->validate([
+            'exclusion_file' => 'required_without:file',
+            'file' => 'required_without:exclusion_file',
+        ]);
+
+        $trainee = Trainee::withTrashed()->findOrFail($trainee_id);
+        $file = $request->file('exclusion_file') ?: $request->file('file');
+        $uploaded_file = $trainee->uploadToFolder($file, 'exclusion-file');
+
+        $trainee->refresh();
+
+        return $uploaded_file;
+    }
+
+    /**
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param                          $trainee_id
+     *
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function deleteExclusionFile(Request $request, $trainee_id)
+    {
+        $trainee = Trainee::withTrashed()->findOrFail($trainee_id);
+        $trainee->deleteMediaCollectionWithAudit('exclusion-file');
 
         return response()->redirectTo($trainee->show_url);
     }
@@ -2057,6 +2096,7 @@ class TraineesController extends Controller
             ->merge($trainee->getMedia('non-registration-proof'))
             ->merge($trainee->getMedia('gosi-certificate'))
             ->merge($trainee->getMedia('qiwa-contract'))
+            ->merge($trainee->getMedia('exclusion-file'))
             ->merge($trainee->getMedia('general_files'));
 
         return MediaStream::create(str_slug($trainee->name) . '-files.zip')

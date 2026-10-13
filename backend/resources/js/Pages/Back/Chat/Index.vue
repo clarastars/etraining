@@ -2151,6 +2151,12 @@ export default {
                     available: !!(docs.qiwa_contract && docs.qiwa_contract.url),
                     document: docs.qiwa_contract || null,
                 },
+                {
+                    key: 'exclusion_file',
+                    label: this.$t('words.exclusion-file'),
+                    available: !!(docs.exclusion_file && docs.exclusion_file.url),
+                    document: docs.exclusion_file || null,
+                },
             ];
         },
         traineeDocumentModalTitle() {

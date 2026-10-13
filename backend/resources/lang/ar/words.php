@@ -135,6 +135,7 @@ return [
     'bank-account-photocopy' => 'حساب البنكي (صورة)',
     'gosi-certificate' => 'شهادة التأمينات',
     'qiwa-contract' => 'عقد قوى',
+    'exclusion-file' => 'ملف الاستبعاد',
     'download' => 'عرض',
     'open-new-instructor-file' => 'إنشاء ملف مدرب جديد',
     'open-new-instructor-file-description' => 'هنا يمكن لك إنشاء ملف مدرب جديد ورفع كل المستندات المطلوبة',
