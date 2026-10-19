@@ -26,6 +26,9 @@ return [
 
     'unlock_delay_hours' => (int) env('TRAINING_DISCLOSURE_UNLOCK_DELAY_HOURS', 0),
 
+    // Hours between completion reminders for learners who have not finished check-in or the course.
+    'reminder_interval_hours' => (int) env('TRAINING_DISCLOSURE_REMINDER_INTERVAL_HOURS', 12),
+
     // ISO weekdays: 0=Sunday … 6=Saturday (matches recorded-course UI)
     'allowed_weekdays' => [0, 1, 2, 3, 4],
 ];

@@ -247,6 +247,24 @@ class MailController extends Controller
                                 'mailgun_message_id' => $enrollment->mailgun_message_id ?: $messageId,
                             ]);
                         }
+                    } elseif ($mailType === 'recorded_course_reminder') {
+                        if ($eventData['event'] === 'delivered') {
+                            $enrollment->update([
+                                'reminder_delivery_status' => 'delivered',
+                                'reminder_failure_reason' => null,
+                            ]);
+                        } elseif (in_array($eventData['event'], ['failed', 'bounced', 'complained'], true)) {
+                            $reason = match ($eventData['event']) {
+                                'bounced' => 'Email bounced: ' . (Arr::get($eventData, 'delivery-status.message', 'Unknown bounce reason')),
+                                'complained' => 'Email marked as spam/complaint',
+                                default => Arr::get($eventData, 'delivery-status.message', 'Unknown delivery failure'),
+                            };
+
+                            $enrollment->update([
+                                'reminder_delivery_status' => 'failed',
+                                'reminder_failure_reason' => $reason,
+                            ]);
+                        }
                     } elseif ($eventData['event'] === 'delivered') {
                         $enrollment->update([
                             'delivery_status' => 'delivered',

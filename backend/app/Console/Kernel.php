@@ -49,6 +49,7 @@ class Kernel extends ConsoleKernel
             $schedule->command('etraining:company-trainee-snapshot')->daily()->at('23:00')->onOneServer();
             $schedule->command('masdr:gosi-usage-report')->weekly()->sundays()->at('08:00')->onOneServer();
             $schedule->command('invoice-details:sync-documentation-dates')->hourly()->onOneServer()->withoutOverlapping();
+            $schedule->command('recorded-courses:send-completion-reminders')->hourly()->onOneServer()->withoutOverlapping();
         }
     }
 

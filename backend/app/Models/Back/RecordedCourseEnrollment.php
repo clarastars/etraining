@@ -6,6 +6,8 @@ namespace App\Models\Back;
 
 use App\Models\Team;
 use App\Models\User;
+use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -49,6 +51,9 @@ class RecordedCourseEnrollment extends Model
         'delivered_at',
         'failed_at',
         'delivery_failure_reason',
+        'last_reminder_sent_at',
+        'reminder_delivery_status',
+        'reminder_failure_reason',
     ];
 
     protected $casts = [
@@ -61,6 +66,7 @@ class RecordedCourseEnrollment extends Model
         'certificate_sent_at' => 'datetime',
         'delivered_at' => 'datetime',
         'failed_at' => 'datetime',
+        'last_reminder_sent_at' => 'datetime',
     ];
 
     protected static function boot(): void
@@ -108,6 +114,38 @@ class RecordedCourseEnrollment extends Model
     public function isCheckedIn(): bool
     {
         return $this->checked_in_at !== null;
+    }
+
+    /**
+     * Invited learners who have not finished the course, and whose last invite or reminder is older than the interval.
+     *
+     * @param  Builder<RecordedCourseEnrollment>  $query
+     * @return Builder<RecordedCourseEnrollment>
+     */
+    public function scopeDueForCompletionReminder(Builder $query, ?CarbonInterface $now = null): Builder
+    {
+        $now = $now ?? now();
+        $cutoff = $now->copy()->subHours((int) config('training-disclosure.reminder_interval_hours', 12));
+
+        return $query
+            ->whereNull('completed_at')
+            ->whereNotNull('access_link_sent_at')
+            ->where('access_link_sent_at', '<=', $cutoff)
+            ->where(function (Builder $q) use ($cutoff): void {
+                $q->whereNull('last_reminder_sent_at')
+                    ->orWhere('last_reminder_sent_at', '<=', $cutoff);
+            })
+            ->where(function (Builder $q): void {
+                $q->whereNull('delivery_status')
+                    ->orWhere('delivery_status', '!=', 'failed');
+            })
+            ->where(function (Builder $q): void {
+                $q->whereNull('reminder_delivery_status')
+                    ->orWhere('reminder_delivery_status', '!=', 'failed');
+            })
+            ->whereHas('trainee', function (Builder $q): void {
+                $q->whereNotNull('email')->where('email', '!=', '');
+            });
     }
 
     public function trainee(): BelongsTo

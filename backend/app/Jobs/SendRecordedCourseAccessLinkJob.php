@@ -58,6 +58,8 @@ class SendRecordedCourseAccessLinkJob implements ShouldQueue
         $enrollment->failed_at = null;
         $enrollment->delivery_failure_reason = null;
         $enrollment->mailgun_message_id = null;
+        $enrollment->reminder_delivery_status = null;
+        $enrollment->reminder_failure_reason = null;
         $enrollment->save();
     }
 }

@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Jobs\SendRecordedCourseAccessLinkJob;
 use App\Jobs\SendRecordedCourseCertificateJob;
+use App\Mail\RecordedCourseReminderMail;
 use App\Models\Back\RecordedCourse;
 use App\Models\Back\RecordedCourseEnrollment;
 use App\Models\Back\RecordedCourseLesson;
@@ -483,5 +484,134 @@ class RecordedCourseDisclosureFlowTest extends TestCase
         $collection = $lesson->getMediaCollection(RecordedCourseLesson::VIDEO_COLLECTION);
         $this->assertNotNull($collection);
         $this->assertSame('s3', $collection->diskName);
+    }
+
+    public function test_completion_reminder_repeats_every_twelve_hours_until_the_course_is_finished(): void
+    {
+        Mail::fake();
+        Carbon::setTestNow('2026-10-19 12:00:00');
+
+        $admin = $this->makeAdminWithTeam();
+        [$course] = $this->createCourseTwoLessons($admin);
+        $trainee = $this->createTrainee($admin);
+
+        $enrollment = RecordedCourseEnrollment::query()->create([
+            'team_id' => $trainee->team_id,
+            'trainee_id' => $trainee->id,
+            'recorded_course_id' => $course->id,
+            'enrolled_at' => now()->subHours(13),
+            'access_link_sent_at' => now()->subHours(12),
+            'delivery_status' => 'delivered',
+        ]);
+        $token = $enrollment->access_token;
+
+        $this->artisan('recorded-courses:send-completion-reminders')->assertExitCode(0);
+
+        Mail::assertSent(RecordedCourseReminderMail::class, function (RecordedCourseReminderMail $mail) use ($trainee) {
+            return $mail->hasTo($trainee->email);
+        });
+        $enrollment->refresh();
+        $this->assertNotNull($enrollment->last_reminder_sent_at);
+        $this->assertSame('pending', $enrollment->reminder_delivery_status);
+        $this->assertSame($token, $enrollment->access_token);
+
+        Mail::fake();
+        $this->artisan('recorded-courses:send-completion-reminders')->assertExitCode(0);
+        Mail::assertNothingSent();
+
+        Carbon::setTestNow(now()->addHours(12));
+        $this->artisan('recorded-courses:send-completion-reminders')->assertExitCode(0);
+        Mail::assertSent(RecordedCourseReminderMail::class);
+
+        $enrollment->forceFill(['completed_at' => now()])->save();
+        Carbon::setTestNow(now()->addHours(12));
+        Mail::fake();
+        $this->artisan('recorded-courses:send-completion-reminders')->assertExitCode(0);
+        Mail::assertNothingSent();
+
+        Carbon::setTestNow();
+    }
+
+    public function test_completion_reminder_skips_recent_invites_and_bounced_addresses(): void
+    {
+        Mail::fake();
+        Carbon::setTestNow('2026-10-19 12:00:00');
+
+        $admin = $this->makeAdminWithTeam();
+        [$course] = $this->createCourseTwoLessons($admin);
+        $recent = $this->createTrainee($admin);
+        $bounced = $this->createTrainee($admin);
+
+        RecordedCourseEnrollment::query()->create([
+            'team_id' => $recent->team_id,
+            'trainee_id' => $recent->id,
+            'recorded_course_id' => $course->id,
+            'enrolled_at' => now()->subHour(),
+            'access_link_sent_at' => now()->subHour(),
+            'delivery_status' => 'delivered',
+        ]);
+        RecordedCourseEnrollment::query()->create([
+            'team_id' => $bounced->team_id,
+            'trainee_id' => $bounced->id,
+            'recorded_course_id' => $course->id,
+            'enrolled_at' => now()->subDay(),
+            'access_link_sent_at' => now()->subDay(),
+            'delivery_status' => 'failed',
+        ]);
+
+        $this->artisan('recorded-courses:send-completion-reminders')->assertExitCode(0);
+        Mail::assertNothingSent();
+
+        Carbon::setTestNow();
+    }
+
+    public function test_mailgun_reminder_bounce_does_not_change_invite_or_certificate_status(): void
+    {
+        $admin = $this->makeAdminWithTeam();
+        [$course] = $this->createCourseTwoLessons($admin);
+        $trainee = $this->createTrainee($admin);
+
+        $enrollment = RecordedCourseEnrollment::query()->create([
+            'team_id' => $trainee->team_id,
+            'trainee_id' => $trainee->id,
+            'recorded_course_id' => $course->id,
+            'enrolled_at' => now()->subDay(),
+            'access_link_sent_at' => now()->subDay(),
+            'delivery_status' => 'delivered',
+            'certificate_status' => RecordedCourseEnrollment::CERTIFICATE_STATUS_NONE,
+            'last_reminder_sent_at' => now(),
+            'reminder_delivery_status' => 'pending',
+        ]);
+
+        $this->post(route('webhooks.mail'), [
+            'event-data' => [
+                'event' => 'bounced',
+                'recipient' => $trainee->email,
+                'user-variables' => [
+                    'recorded_course_enrollment_id' => $enrollment->id,
+                    'type' => 'recorded_course_reminder',
+                ],
+                'delivery-status' => [
+                    'message' => 'No such person',
+                ],
+                'message' => [
+                    'headers' => [
+                        'message-id' => 'msg-reminder-bounce@mailgun',
+                    ],
+                ],
+            ],
+        ])->assertOk();
+
+        $enrollment->refresh();
+        $this->assertSame('failed', $enrollment->reminder_delivery_status);
+        $this->assertStringContainsString('No such person', (string) $enrollment->reminder_failure_reason);
+        $this->assertSame('delivered', $enrollment->delivery_status);
+        $this->assertSame(RecordedCourseEnrollment::CERTIFICATE_STATUS_NONE, $enrollment->certificate_status);
+
+        Mail::fake();
+        Carbon::setTestNow(now()->addHours(13));
+        $this->artisan('recorded-courses:send-completion-reminders')->assertExitCode(0);
+        Mail::assertNothingSent();
+        Carbon::setTestNow();
     }
 }
