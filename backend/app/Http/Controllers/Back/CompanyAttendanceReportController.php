@@ -163,7 +163,10 @@ class CompanyAttendanceReportController extends Controller
                     'status' => $previousSettings ? $previousSettings->status : null, // Preserve previous status
                     'comment' => $previousSettings ? $previousSettings->comment : null, // Preserve previous comment
                     'start_date' => $date_from, // Start from report start date
-                    'end_date' => Carbon::parse($resignation->resignation_date)->endOfDay(), // End at resignation date
+                    'end_date' => $report->boundTraineeDates(
+                        $date_from,
+                        Carbon::parse($resignation->resignation_date)->endOfDay()
+                    )[1],
                 ];
             } else {
                 // This is an active trainee - preserve previous settings if exist

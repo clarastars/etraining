@@ -85,7 +85,10 @@ class CompanyAttendanceReportService
                 $traineeData[$traineeId] = [
                     'active' => true,
                     'start_date' => $report->date_from, // Start from report start date
-                    'end_date' => Carbon::parse($resignation->resignation_date)->endOfDay(), // End at resignation date
+                    'end_date' => $report->boundTraineeDates(
+                        $report->date_from,
+                        Carbon::parse($resignation->resignation_date)->endOfDay()
+                    )[1],
                 ];
             } else {
                 // This is an active trainee - set start_date and end_date to null
@@ -207,7 +210,10 @@ class CompanyAttendanceReportService
                     'status' => $previousSettings ? $previousSettings->status : null, // Preserve previous status
                     'comment' => $previousSettings ? $previousSettings->comment : null, // Preserve previous comment
                     'start_date' => $clone->date_from, // Start from report start date
-                    'end_date' => Carbon::parse($resignation->resignation_date)->endOfDay(), // End at resignation date
+                    'end_date' => $clone->boundTraineeDates(
+                        $clone->date_from,
+                        Carbon::parse($resignation->resignation_date)->endOfDay()
+                    )[1],
                 ];
             } else {
                 // This is an active trainee - preserve previous settings if exist

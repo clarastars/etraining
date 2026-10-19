@@ -99,6 +99,37 @@ class CompanyAttendanceReport extends Model implements Auditable
         return $this->date_from->format('d-m-Y') .' - '.$this->date_to->format('d-m-Y');
     }
 
+    /**
+     * Keep a trainee's work window inside this report.
+     * A resignation after date_to must not extend the counted days past the period.
+     *
+     * @param  mixed  $start
+     * @param  mixed  $end
+     * @return array{0: \Carbon\Carbon, 1: \Carbon\Carbon}
+     */
+    public function boundTraineeDates($start, $end): array
+    {
+        $periodStart = \Carbon\Carbon::parse($this->date_from)->copy()->startOfDay();
+        $periodEnd = \Carbon\Carbon::parse($this->date_to)->copy()->endOfDay();
+
+        $start = \Carbon\Carbon::parse($start)->copy();
+        $end = \Carbon\Carbon::parse($end)->copy();
+
+        if ($start->lt($periodStart)) {
+            $start = $periodStart->copy();
+        }
+
+        if ($end->gt($periodEnd)) {
+            $end = $periodEnd->copy();
+        }
+
+        if ($end->lt($start)) {
+            $end = $start->copy();
+        }
+
+        return [$start, $end];
+    }
+
     public function getUpdatedAtHumanAttribute()
     {
         return $this->updated_at->setTimezone('Asia/Riyadh')->format('d-m-Y h:ia');
@@ -214,7 +245,10 @@ class CompanyAttendanceReport extends Model implements Auditable
                                     $actualRecord->start_date = \Carbon\Carbon::parse($this->date_from);
                                 }
                                 if (!$actualRecord->end_date) {
-                                    $actualRecord->end_date = \Carbon\Carbon::parse($resignation->resignation_date)->endOfDay();
+                                    $actualRecord->end_date = $this->boundTraineeDates(
+                                        $this->date_from,
+                                        \Carbon\Carbon::parse($resignation->resignation_date)->endOfDay()
+                                    )[1];
                                 }
                                 return $actualRecord;
                             } else {
@@ -227,7 +261,10 @@ class CompanyAttendanceReport extends Model implements Auditable
                                 $mockAttendance->status = null; // Default status
                                 $mockAttendance->comment = null; // Default comment
                                 $mockAttendance->start_date = \Carbon\Carbon::parse($this->date_from); // Start from report start date
-                                $mockAttendance->end_date = \Carbon\Carbon::parse($resignation->resignation_date)->endOfDay(); // End at resignation date
+                                $mockAttendance->end_date = $this->boundTraineeDates(
+                                    $this->date_from,
+                                    \Carbon\Carbon::parse($resignation->resignation_date)->endOfDay()
+                                )[1];
                                 return $mockAttendance;
                             }
                         })
@@ -241,9 +278,22 @@ class CompanyAttendanceReport extends Model implements Auditable
         $uniqueTrainees = $allTrainees->unique(function($item) {
             return $item->trainee->id;
         });
-        
 
-        return $uniqueTrainees;
+        return $uniqueTrainees->map(function ($item) {
+            if (empty($item->start_date) || empty($item->end_date)) {
+                return $item;
+            }
+
+            [$start, $end] = $this->boundTraineeDates($item->start_date, $item->end_date);
+            $item->start_date = $start;
+            $item->end_date = $end;
+
+            if ($item instanceof Model) {
+                $item->syncOriginal();
+            }
+
+            return $item;
+        });
     }
 
     public function getFallsUnderPtcNetAttribute()
