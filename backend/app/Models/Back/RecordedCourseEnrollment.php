@@ -116,6 +116,26 @@ class RecordedCourseEnrollment extends Model
         return $this->checked_in_at !== null;
     }
 
+    public function certificateEntitlement(): string
+    {
+        if ($this->certificate_status === self::CERTIFICATE_STATUS_SENT) {
+            return 'certificate_sent';
+        }
+
+        if ($this->certificate_status === self::CERTIFICATE_STATUS_PENDING_APPROVAL
+            || $this->certificate_status === self::CERTIFICATE_STATUS_APPROVED
+            || $this->certificate_status === self::CERTIFICATE_STATUS_FAILED
+            || $this->completed_at !== null) {
+            return 'eligible';
+        }
+
+        if ($this->checked_in_at === null) {
+            return 'not_started';
+        }
+
+        return 'in_progress';
+    }
+
     /**
      * Invited learners who have not finished the course, and whose last invite or reminder is older than the interval.
      *

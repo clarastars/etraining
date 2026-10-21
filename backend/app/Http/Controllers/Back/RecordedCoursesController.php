@@ -212,17 +212,7 @@ class RecordedCoursesController extends Controller
                 ? (int) round(($lessonsCompleted / $lessonsTotal) * 100)
                 : 0;
 
-            $entitlement = 'in_progress';
-            if ($e->certificate_status === RecordedCourseEnrollment::CERTIFICATE_STATUS_SENT) {
-                $entitlement = 'certificate_sent';
-            } elseif ($e->certificate_status === RecordedCourseEnrollment::CERTIFICATE_STATUS_PENDING_APPROVAL
-                || $e->certificate_status === RecordedCourseEnrollment::CERTIFICATE_STATUS_APPROVED
-                || $e->certificate_status === RecordedCourseEnrollment::CERTIFICATE_STATUS_FAILED
-                || $e->completed_at !== null) {
-                $entitlement = 'eligible';
-            } elseif ($e->checked_in_at === null) {
-                $entitlement = 'not_started';
-            }
+            $entitlement = $e->certificateEntitlement();
 
             return [
                 'id' => $e->id,

@@ -130,6 +130,8 @@ const routeFallbacks = {
     'back.chat.company-filters.update': '/back/chat/company-filters',
     'back.chat.company-filters.clear': '/back/chat/company-filters',
     'back.training-disclosure.index': '/back/training-disclosure',
+    'back.training-disclosure.report': '/back/training-disclosure/report',
+    'back.training-disclosure.report.export': '/back/training-disclosure/report/export',
     'back.training-disclosure.requests.index': '/back/training-disclosure/requests',
     'back.training-disclosure.requests.create': '/back/training-disclosure/requests/create',
     'back.training-disclosure.requests.store': '/back/training-disclosure/requests',

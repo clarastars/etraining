@@ -161,6 +161,7 @@
             isTrainingDisclosureActive() {
                 const name = (this.$page && this.$page.currentRouteName) || '';
                 return name === 'back.training-disclosure.index'
+                    || name === 'back.training-disclosure.report'
                     || name.indexOf('back.settings.recorded-courses') === 0;
             },
         },

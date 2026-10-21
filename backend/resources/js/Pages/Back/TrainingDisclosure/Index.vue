@@ -29,7 +29,19 @@
         </div>
       </div>
 
-      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-10">
+      <div class="grid gap-4 sm:grid-cols-2 mb-10">
+        <inertia-link
+          :href="route('back.training-disclosure.report')"
+          class="block p-5 bg-white rounded-lg shadow border border-emerald-200 hover:border-emerald-400 hover:shadow-md transition"
+        >
+          <h2 class="font-semibold text-gray-900 mb-1">
+            {{ $t("words.training-disclosure-card-report-title") }}
+          </h2>
+          <p class="text-sm text-gray-600">
+            {{ $t("words.training-disclosure-card-report-body") }}
+          </p>
+        </inertia-link>
+
         <inertia-link
           :href="route('back.training-disclosure.requests.index')"
           class="block p-5 bg-white rounded-lg shadow border border-indigo-200 hover:border-indigo-400 hover:shadow-md transition"

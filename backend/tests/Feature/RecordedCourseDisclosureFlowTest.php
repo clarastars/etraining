@@ -7,10 +7,13 @@ namespace Tests\Feature;
 use App\Jobs\SendRecordedCourseAccessLinkJob;
 use App\Jobs\SendRecordedCourseCertificateJob;
 use App\Mail\RecordedCourseReminderMail;
+use App\Models\Back\Company;
 use App\Models\Back\RecordedCourse;
 use App\Models\Back\RecordedCourseEnrollment;
 use App\Models\Back\RecordedCourseLesson;
+use App\Models\Back\RecordedCourseLessonProgress;
 use App\Models\Back\Trainee;
+use App\Models\Back\TrainingDisclosureRequest;
 use App\Models\User;
 use App\Services\RolesService;
 use Carbon\Carbon;
@@ -613,5 +616,158 @@ class RecordedCourseDisclosureFlowTest extends TestCase
         $this->artisan('recorded-courses:send-completion-reminders')->assertExitCode(0);
         Mail::assertNothingSent();
         Carbon::setTestNow();
+    }
+
+    public function test_company_report_is_limited_to_disclosure_request_companies(): void
+    {
+        $admin = $this->makeAdminWithTeam();
+        [$course, $lesson1] = $this->createCourseTwoLessons($admin);
+
+        $company = Company::factory()->create([
+            'team_id' => $admin->current_team_id,
+            'name_ar' => 'شركة الإفصاح',
+            'name_en' => 'Disclosure Co',
+            'shelf_number' => 'SH-REPORT-1',
+        ]);
+        $otherCompany = Company::factory()->create([
+            'team_id' => $admin->current_team_id,
+            'name_ar' => 'شركة أخرى',
+            'name_en' => 'Other Co',
+            'shelf_number' => 'SH-REPORT-2',
+        ]);
+
+        $checkedIn = $this->createTrainee($admin);
+        $checkedIn->forceFill([
+            'company_id' => $company->id,
+            'name' => 'Nora',
+            'email' => 'nora@example.com',
+        ])->save();
+
+        $notStarted = $this->createTrainee($admin);
+        $notStarted->forceFill([
+            'company_id' => $company->id,
+            'name' => 'Sam',
+            'email' => 'sam@example.com',
+        ])->save();
+
+        $outsider = $this->createTrainee($admin);
+        $outsider->forceFill([
+            'company_id' => $otherCompany->id,
+            'name' => 'Outsider',
+            'email' => 'outsider@example.com',
+        ])->save();
+
+        $checkedInEnrollment = RecordedCourseEnrollment::query()->create([
+            'team_id' => $checkedIn->team_id,
+            'trainee_id' => $checkedIn->id,
+            'recorded_course_id' => $course->id,
+            'enrolled_at' => now(),
+            'delivery_status' => 'delivered',
+            'delivered_at' => now(),
+            'checked_in_at' => now(),
+        ]);
+        RecordedCourseLessonProgress::query()->create([
+            'recorded_course_enrollment_id' => $checkedInEnrollment->id,
+            'recorded_course_lesson_id' => $lesson1->id,
+            'unlocked_at' => now(),
+            'completed_at' => now(),
+        ]);
+
+        RecordedCourseEnrollment::query()->create([
+            'team_id' => $notStarted->team_id,
+            'trainee_id' => $notStarted->id,
+            'recorded_course_id' => $course->id,
+            'enrolled_at' => now(),
+            'delivery_status' => 'pending',
+        ]);
+
+        RecordedCourseEnrollment::query()->create([
+            'team_id' => $outsider->team_id,
+            'trainee_id' => $outsider->id,
+            'recorded_course_id' => $course->id,
+            'enrolled_at' => now(),
+            'delivery_status' => 'delivered',
+            'checked_in_at' => now(),
+        ]);
+
+        TrainingDisclosureRequest::query()->create([
+            'team_id' => $admin->current_team_id,
+            'number' => 'E100',
+            'company_id' => $company->id,
+            'company_name' => 'شركة الإفصاح',
+            'trainees_count' => 2,
+            'trainees_draft' => [],
+        ]);
+        TrainingDisclosureRequest::query()->create([
+            'team_id' => $admin->current_team_id,
+            'number' => 'E101',
+            'company_id' => $company->id,
+            'company_name' => 'شركة الإفصاح',
+            'trainees_count' => 2,
+            'trainees_draft' => [],
+        ]);
+
+        $userWithoutPerm = User::factory()->create(['current_team_id' => $admin->current_team_id]);
+        $this->actingAs($userWithoutPerm)
+            ->get(route('back.training-disclosure.report'))
+            ->assertForbidden();
+
+        $this->actingAs($admin)
+            ->get(route('back.training-disclosure.report'))
+            ->assertOk()
+            ->assertPropCount('companies', 1)
+            ->assertPropValue('companies', function ($companies) use ($company) {
+                $this->assertSame($company->id, $companies[0]['id']);
+                $this->assertSame(2, $companies[0]['requests_count']);
+                $this->assertTrue($companies[0]['linked']);
+            })
+            ->assertPropCount('rows', 0);
+
+        $this->actingAs($admin)
+            ->get(route('back.training-disclosure.report', ['company' => $otherCompany->id]))
+            ->assertOk()
+            ->assertPropValue('selectedCompany', function ($selected) {
+                $this->assertNull($selected);
+            })
+            ->assertPropCount('rows', 0);
+
+        $this->actingAs($admin)
+            ->get(route('back.training-disclosure.report', ['company' => $company->id]))
+            ->assertOk()
+            ->assertPropValue('summary', function ($summary) {
+                $this->assertSame(2, $summary['employees']);
+                $this->assertSame(1, $summary['emails_delivered']);
+                $this->assertSame(1, $summary['accessed']);
+                $this->assertSame(0, $summary['eligible']);
+            })
+            ->assertPropValue('rows', function ($rows) {
+                $this->assertCount(2, $rows);
+                $this->assertSame('Nora', $rows[0]['name']);
+                $this->assertSame('nora@example.com', $rows[0]['email']);
+                $this->assertSame('delivered', $rows[0]['delivery_status']);
+                $this->assertTrue($rows[0]['accessed']);
+                $this->assertSame(50, $rows[0]['progress_percent']);
+                $this->assertSame(1, $rows[0]['lessons_completed']);
+                $this->assertSame(2, $rows[0]['lessons_total']);
+                $this->assertSame('in_progress', $rows[0]['entitlement']);
+                $this->assertSame('Sam', $rows[1]['name']);
+                $this->assertSame('pending', $rows[1]['delivery_status']);
+                $this->assertFalse($rows[1]['accessed']);
+                $this->assertSame(0, $rows[1]['progress_percent']);
+                $this->assertSame('not_started', $rows[1]['entitlement']);
+            });
+
+        $export = $this->actingAs($admin)
+            ->get(route('back.training-disclosure.report.export', ['company' => $company->id]));
+
+        $export->assertOk();
+        $this->assertStringContainsString(
+            'spreadsheet',
+            (string) $export->headers->get('content-type')
+        );
+
+        $this->actingAs($admin)
+            ->get(route('back.training-disclosure.report.export', ['company' => $otherCompany->id]))
+            ->assertNotFound();
     }
 }

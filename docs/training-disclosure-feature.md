@@ -73,13 +73,36 @@ Mailgun webhook updates delivery fields
 The hub shows:
 
 - Stats: courses, distinct companies with enrollments, enrollments, checked-in, completed, pending certificate approval, certificates sent, disclosure request count.
-- Cards for disclosure requests, recorded-course management, and company enrollment.
+- Cards for the company attendance report, disclosure requests, recorded-course management, and company enrollment.
 - Recent disclosure requests (8) and a pending-certificate queue (15). Users with `approve-recorded-course-certificates` can approve from the queue.
 - Course list (latest 50) with readiness, Drive sync metadata, enrollment / completion / pending counts.
 
 A course is **ready** when it has at least one lesson and every lesson has an S3 video. The settings wizard uses a stricter `ready_for_engineers` flag (names, at least one weekday, at least one lesson, all videos present).
 
-Sidebar: `/back/training-disclosure` is shown when the user can `manage-recorded-courses`. It stays active for `back.training-disclosure.*` and `back.settings.recorded-courses.*`.
+Sidebar: `/back/training-disclosure` is shown when the user can `manage-recorded-courses`. It stays active for the HQ page, the company attendance report, and `back.settings.recorded-courses.*`.
+
+### Company attendance report
+
+**Route**: `GET /back/training-disclosure/report` (`back.training-disclosure.report`)
+
+**Permission**: `manage-recorded-courses`
+
+**UI**: `resources/js/Pages/Back/TrainingDisclosure/Report.vue`
+
+The company dropdown lists only companies that have a disclosure request (duplicate requests for the same company are one option). A request without `company_id` is still listed, and is matched to a company on the same team when `company_name` equals `name_ar` or `name_en`.
+
+Selecting a linked company loads one row per recorded-course enrollment for that company's trainees:
+
+| Column | Source |
+|---|---|
+| Name / Email | Trainee |
+| Course | Recorded course (a company can have more than one) |
+| Delivered email | Invite `delivery_status` (`delivered`, `pending`, `failed`, or not sent) |
+| Accessed | `checked_in_at` is set (they opened the passwordless link and checked in) |
+| Progress | `lessons completed / lessons total` |
+| Certificate eligibility | Same entitlement labels as the course enrollments page |
+
+Summary counts: employees, emails delivered, accessed, and certificate-eligible (includes certificates already sent). Excel download: `GET /back/training-disclosure/report/export?company={id}`. A company id that has no disclosure request returns an empty report, and its export is 404.
 
 ## Disclosure Requests
 
@@ -422,6 +445,7 @@ There is **no database relationship**.
 2. Ops create or import a recorded course and enroll real `Trainee` rows (company picker, bulk enroll, or engineer profile).
 3. Each enrollment gets its own `access_token` and email job.
 4. HQ stats join enrollments → trainees → companies for operational metrics. Disclosure request count is a separate table count.
+5. The company attendance report lists companies from disclosure requests, then shows enrollments for trainees on that company.
 
 The intended sequence is the six HQ process steps: request → course → enroll + links → passwordless attendance → pending approval → approve + send.
 
@@ -430,7 +454,7 @@ The intended sequence is the six HQ process steps: request → course → enroll
 | File | Covers |
 |---|---|
 | `tests/Feature/TrainingDisclosureRequestsTest.php` | E-numbering, CRUD, HQ stats |
-| `tests/Feature/RecordedCourseDisclosureFlowTest.php` | Public check-in, completion → pending, approve + job, access link, Mailgun, HQ, S3 collection |
+| `tests/Feature/RecordedCourseDisclosureFlowTest.php` | Public check-in, completion → pending, approve + job, access link, Mailgun, HQ, company attendance report, S3 collection |
 | `tests/Feature/RecordedCourseLearnerFlowTest.php` | Weekdays, delay between lessons, zero-delay auto-unlock, catch-up, engineer enroll |
 | `tests/Feature/RecordedCoursesTest.php` | Admin course / lesson CRUD |
 | `tests/Feature/RecordedCourseVideoChunkUploadTest.php` | Chunked video upload |
@@ -441,6 +465,7 @@ The intended sequence is the six HQ process steps: request → course → enroll
 | Surface | Path |
 |---|---|
 | HQ | `resources/js/Pages/Back/TrainingDisclosure/Index.vue` |
+| Company report | `resources/js/Pages/Back/TrainingDisclosure/Report.vue` |
 | Requests | `resources/js/Pages/Back/TrainingDisclosure/Requests/{Index,Create,Show}.vue` |
 | Course catalog | `resources/js/Pages/Back/Settings/RecordedCourses/Index.vue` |
 | Course wizard | `Show.vue`, `Details.vue`, `Schedule.vue`, `Lessons/*`, `Enrollments.vue` |
