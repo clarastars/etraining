@@ -50,6 +50,12 @@ class PublicRecordedCourseAccessController extends Controller
         $trainee = $enrollment->trainee;
         $now = Carbon::now(config('app.timezone'));
 
+        if ($enrollment->isCheckedIn()
+            && $this->progressService->canShowUnlockButton($enrollment, $now)) {
+            $this->progressService->unlockNextLesson($trainee, $enrollment, $now);
+            $enrollment->load('lessonProgress');
+        }
+
         $lessons = $course->lessons->map(function (RecordedCourseLesson $lesson) use ($enrollment, $trainee, $token, $course): array {
             $progress = $this->progressService->progressForLesson($enrollment, $lesson);
             $unlocked = $progress?->unlocked_at;
@@ -96,6 +102,13 @@ class PublicRecordedCourseAccessController extends Controller
         if ($enrollment->checked_in_at === null) {
             $enrollment->checked_in_at = now();
             $enrollment->save();
+        }
+
+        // Open the first available lesson immediately so learners are not stuck
+        // looking at a list of locked days after check-in.
+        $now = Carbon::now(config('app.timezone'));
+        if ($this->progressService->canShowUnlockButton($enrollment->fresh(), $now)) {
+            $this->progressService->unlockNextLesson($enrollment->trainee, $enrollment, $now);
         }
 
         return redirect()->route('recorded-courses.public.show', ['token' => $token]);

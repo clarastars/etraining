@@ -139,16 +139,14 @@ class RecordedCourseDisclosureFlowTest extends TestCase
         $this->get(route('recorded-courses.public.stream', ['token' => $token, 'lesson' => $lesson1->id]))
             ->assertForbidden();
 
+        Carbon::setTestNow(Carbon::parse('2026-05-09 10:00:00', config('app.timezone')));
+
         $this->post(route('recorded-courses.public.check-in', ['token' => $token]))
             ->assertRedirect(route('recorded-courses.public.show', ['token' => $token]));
 
         $this->assertNotNull($enrollment->fresh()->checked_in_at);
 
-        Carbon::setTestNow(Carbon::parse('2026-05-09 10:00:00', config('app.timezone')));
-
-        $this->post(route('recorded-courses.public.unlock', ['token' => $token]))
-            ->assertRedirect(route('recorded-courses.public.show', ['token' => $token]));
-
+        // Check-in unlocks the first lesson so the learner is not stuck on "مغلق".
         $this->assertDatabaseHas('recorded_course_lesson_progress', [
             'recorded_course_enrollment_id' => $enrollment->id,
             'recorded_course_lesson_id' => $lesson1->id,
