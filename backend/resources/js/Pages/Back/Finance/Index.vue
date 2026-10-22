@@ -34,6 +34,10 @@
                     {{ $t('words.invoices-details-report') }}
                 </inertia-link>
 
+                <inertia-link :href="route('back.finance.companies-without-payroll')"
+                              class="col-span-1 bg-white shadow-lg rounded-lg p-5 transition-all duration-500 ease-in-out hover:bg-gray-200 text-center">
+                    {{ $t('words.companies-without-payroll') }}
+                </inertia-link>
 
                 <inertia-link :href="route('back.finance.account-statements')"
                               class="col-span-1 bg-white shadow-lg rounded-lg p-5 transition-all duration-500 ease-in-out hover:bg-gray-200 text-center">

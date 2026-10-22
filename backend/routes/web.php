@@ -950,6 +950,8 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function() {
 
             Route::get('account-statements/excel', [\App\Http\Controllers\Back\AccountStatementsController::class, 'excel'])->name('account-statements.excel');
             Route::get('account-statements', [\App\Http\Controllers\Back\AccountStatementsController::class, 'index'])->name('account-statements');
+            Route::get('companies-without-payroll/excel', [\App\Http\Controllers\Back\CompaniesWithoutPayrollController::class, 'excel'])->name('companies-without-payroll.excel');
+            Route::get('companies-without-payroll', [\App\Http\Controllers\Back\CompaniesWithoutPayrollController::class, 'index'])->name('companies-without-payroll');
             Route::resource('accounts', \App\Http\Controllers\Back\FinancialAccountsController::class);
             Route::get('invoices/short', [\App\Http\Controllers\Back\FinancialInvoicesController::class, 'ShortTable'])->name('invoices.short');
             Route::post('invoices/bulk-approve-financial-department', [\App\Http\Controllers\Back\FinancialInvoicesController::class, 'bulkApproveFinancialDepartment'])->name('invoices.bulk-approve-finance-department');
