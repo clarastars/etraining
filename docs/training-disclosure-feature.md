@@ -89,9 +89,9 @@ Sidebar: `/back/training-disclosure` is shown when the user can `manage-recorded
 
 **UI**: `resources/js/Pages/Back/TrainingDisclosure/Report.vue`
 
-The company dropdown lists only companies that have a disclosure request (duplicate requests for the same company are one option). A request without `company_id` is still listed, and is matched to a company on the same team when `company_name` equals `name_ar` or `name_en`.
+The company dropdown lists companies that have at least one recorded-course enrollment (the active disclosure programs). Disclosure requests alone do not appear. Each option shows completed/enrolled counts.
 
-Selecting a linked company loads one row per recorded-course enrollment for that company's trainees:
+Selecting a company loads one row per recorded-course enrollment for that company's trainees:
 
 | Column | Source |
 |---|---|
@@ -102,7 +102,7 @@ Selecting a linked company loads one row per recorded-course enrollment for that
 | Progress | `lessons completed / lessons total` |
 | Certificate eligibility | Same entitlement labels as the course enrollments page |
 
-Summary counts: employees, emails delivered, accessed, and certificate-eligible (includes certificates already sent). Excel download: `GET /back/training-disclosure/report/export?company={id}`. A company id that has no disclosure request returns an empty report, and its export is 404.
+Summary counts: employees, emails delivered, accessed, and certificate-eligible (includes certificates already sent). Excel download: `GET /back/training-disclosure/report/export?company={id}`. A company id with no recorded-course enrollments is omitted from the dropdown, and its export is 404.
 
 ## Disclosure Requests
 
@@ -445,7 +445,7 @@ There is **no database relationship**.
 2. Ops create or import a recorded course and enroll real `Trainee` rows (company picker, bulk enroll, or engineer profile).
 3. Each enrollment gets its own `access_token` and email job.
 4. HQ stats join enrollments → trainees → companies for operational metrics. Disclosure request count is a separate table count.
-5. The company attendance report lists companies from disclosure requests, then shows enrollments for trainees on that company.
+5. The company attendance report lists companies that already have recorded-course enrollments, then shows those enrollments.
 
 The intended sequence is the six HQ process steps: request → course → enroll + links → passwordless attendance → pending approval → approve + send.
 

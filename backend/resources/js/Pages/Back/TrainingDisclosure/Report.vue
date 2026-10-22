@@ -13,7 +13,7 @@
           </p>
         </div>
         <a
-          v-if="selectedCompany && selectedCompany.linked"
+          v-if="selectedCompany"
           class="btn-blue"
           :href="exportHref"
         >
@@ -34,14 +34,11 @@
           <option value="">{{ $t("words.training-disclosure-report-select-company") }}</option>
           <option v-for="company in companies" :key="company.id" :value="company.id">
             {{ companyLabel(company) }}
+            ({{ company.completed_count }}/{{ company.enrollments_count }})
           </option>
         </select>
         <p class="text-xs text-gray-500 mt-2">
           {{ $t("words.training-disclosure-report-companies-only") }}
-        </p>
-        <p v-if="selectedCompany && selectedCompany.request_numbers.length" class="text-xs text-gray-500 mt-1">
-          {{ $t("words.training-disclosure-report-requests") }}:
-          {{ selectedCompany.request_numbers.join(" · ") }}
         </p>
       </div>
 
@@ -50,11 +47,7 @@
       </p>
 
       <template v-else>
-        <p v-if="!selectedCompany.linked" class="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-6">
-          {{ $t("words.training-disclosure-report-unlinked") }}
-        </p>
-
-        <div v-else class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 mb-6">
+        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 mb-6">
           <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
             <p class="text-xs text-gray-500">{{ $t("words.training-disclosure-report-summary-employees") }}</p>
             <p class="text-2xl font-bold text-gray-900 mt-1">{{ summary.employees }}</p>
@@ -73,7 +66,7 @@
           </div>
         </div>
 
-        <div v-if="selectedCompany.linked" class="bg-white rounded shadow overflow-x-auto">
+        <div class="bg-white rounded shadow overflow-x-auto">
           <table v-if="rows.length" class="min-w-full text-sm border border-gray-200 rounded-lg overflow-hidden">
             <thead class="bg-gray-50 text-left rtl:text-right">
               <tr>

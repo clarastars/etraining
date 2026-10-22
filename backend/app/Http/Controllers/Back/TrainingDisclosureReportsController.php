@@ -35,7 +35,7 @@ class TrainingDisclosureReportsController extends Controller
 
         $built = $reports->build($this->selectedCompanyId($request));
         $selected = $built['selected'];
-        abort_unless(is_array($selected) && ($selected['linked'] ?? false), 404);
+        abort_unless(is_array($selected), 404);
 
         $name = app()->getLocale() === 'en'
             ? ($selected['name_en'] ?: $selected['name_ar'])

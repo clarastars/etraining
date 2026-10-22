@@ -616,7 +616,7 @@ class RecordedCourseDisclosureFlowTest extends TestCase
         Carbon::setTestNow();
     }
 
-    public function test_company_report_is_limited_to_disclosure_request_companies(): void
+    public function test_company_report_lists_enrolled_companies_not_disclosure_requests(): void
     {
         $admin = $this->makeAdminWithTeam();
         [$course, $lesson1] = $this->createCourseTwoLessons($admin);
@@ -632,6 +632,12 @@ class RecordedCourseDisclosureFlowTest extends TestCase
             'name_ar' => 'شركة أخرى',
             'name_en' => 'Other Co',
             'shelf_number' => 'SH-REPORT-2',
+        ]);
+        $requestOnlyCompany = Company::factory()->create([
+            'team_id' => $admin->current_team_id,
+            'name_ar' => 'طلب فقط',
+            'name_en' => 'Request Only',
+            'shelf_number' => 'SH-REPORT-3',
         ]);
 
         $checkedIn = $this->createTrainee($admin);
@@ -686,21 +692,16 @@ class RecordedCourseDisclosureFlowTest extends TestCase
             'enrolled_at' => now(),
             'delivery_status' => 'delivered',
             'checked_in_at' => now(),
+            'completed_at' => now(),
+            'certificate_status' => RecordedCourseEnrollment::CERTIFICATE_STATUS_PENDING_APPROVAL,
         ]);
 
+        // Disclosure request without enrollments must not appear in the report dropdown.
         TrainingDisclosureRequest::query()->create([
             'team_id' => $admin->current_team_id,
             'number' => 'E100',
-            'company_id' => $company->id,
-            'company_name' => 'شركة الإفصاح',
-            'trainees_count' => 2,
-            'trainees_draft' => [],
-        ]);
-        TrainingDisclosureRequest::query()->create([
-            'team_id' => $admin->current_team_id,
-            'number' => 'E101',
-            'company_id' => $company->id,
-            'company_name' => 'شركة الإفصاح',
+            'company_id' => $requestOnlyCompany->id,
+            'company_name' => 'طلب فقط',
             'trainees_count' => 2,
             'trainees_draft' => [],
         ]);
@@ -713,19 +714,15 @@ class RecordedCourseDisclosureFlowTest extends TestCase
         $this->actingAs($admin)
             ->get(route('back.training-disclosure.report'))
             ->assertOk()
-            ->assertPropCount('companies', 1)
-            ->assertPropValue('companies', function ($companies) use ($company) {
-                $this->assertSame($company->id, $companies[0]['id']);
-                $this->assertSame(2, $companies[0]['requests_count']);
-                $this->assertTrue($companies[0]['linked']);
-            })
-            ->assertPropCount('rows', 0);
-
-        $this->actingAs($admin)
-            ->get(route('back.training-disclosure.report', ['company' => $otherCompany->id]))
-            ->assertOk()
-            ->assertPropValue('selectedCompany', function ($selected) {
-                $this->assertNull($selected);
+            ->assertPropCount('companies', 2)
+            ->assertPropValue('companies', function ($companies) use ($company, $otherCompany, $requestOnlyCompany) {
+                $ids = collect($companies)->pluck('id')->all();
+                $this->assertContains($company->id, $ids);
+                $this->assertContains($otherCompany->id, $ids);
+                $this->assertNotContains($requestOnlyCompany->id, $ids);
+                $main = collect($companies)->firstWhere('id', $company->id);
+                $this->assertSame(2, $main['enrollments_count']);
+                $this->assertSame(0, $main['completed_count']);
             })
             ->assertPropCount('rows', 0);
 
@@ -755,6 +752,11 @@ class RecordedCourseDisclosureFlowTest extends TestCase
                 $this->assertSame('not_started', $rows[1]['entitlement']);
             });
 
+        $this->actingAs($admin)
+            ->get(route('back.training-disclosure.report', ['company' => $otherCompany->id]))
+            ->assertOk()
+            ->assertPropCount('rows', 1);
+
         $export = $this->actingAs($admin)
             ->get(route('back.training-disclosure.report.export', ['company' => $company->id]));
 
@@ -765,7 +767,7 @@ class RecordedCourseDisclosureFlowTest extends TestCase
         );
 
         $this->actingAs($admin)
-            ->get(route('back.training-disclosure.report.export', ['company' => $otherCompany->id]))
+            ->get(route('back.training-disclosure.report.export', ['company' => $requestOnlyCompany->id]))
             ->assertNotFound();
     }
 }

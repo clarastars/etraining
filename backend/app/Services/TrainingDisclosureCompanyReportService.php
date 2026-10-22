@@ -6,8 +6,7 @@ namespace App\Services;
 
 use App\Models\Back\Company;
 use App\Models\Back\RecordedCourseEnrollment;
-use App\Models\Back\TrainingDisclosureRequest;
-use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class TrainingDisclosureCompanyReportService
 {
@@ -29,7 +28,7 @@ class TrainingDisclosureCompanyReportService
         }
 
         $rows = [];
-        if (is_array($selected) && ($selected['linked'] ?? false) && is_string($selected['company_id'] ?? null)) {
+        if (is_array($selected) && is_string($selected['company_id'] ?? null)) {
             $rows = $this->rowsForCompany($selected['company_id']);
         }
 
@@ -81,84 +80,54 @@ class TrainingDisclosureCompanyReportService
     }
 
     /**
+     * Companies with at least one recorded-course enrollment (active disclosure programs).
+     *
      * @return list<array<string, mixed>>
      */
     private function companies(): array
     {
         $teamId = auth()->user()?->current_team_id;
-        $requests = TrainingDisclosureRequest::query()
-            ->with('company:id,name_ar,name_en,team_id')
-            ->get();
-
-        $companiesByName = $this->companiesByNormalizedName(is_string($teamId) ? $teamId : null);
-
-        /** @var Collection<string, array<string, mixed>> $grouped */
-        $grouped = collect();
-
-        foreach ($requests as $request) {
-            $companyId = $this->resolveCompanyId($request, $companiesByName);
-            $key = $companyId ?? ('unlinked:'.substr(md5($this->normalizeName($request->company_name)), 0, 12));
-            $company = $companyId ? ($request->company_id === $companyId ? $request->company : Company::query()->find($companyId)) : null;
-
-            $existing = $grouped->get($key);
-            $numbers = $existing['request_numbers'] ?? [];
-            $numbers[] = $request->number;
-
-            $grouped->put($key, [
-                'id' => $key,
-                'company_id' => $companyId,
-                'name_ar' => $company?->name_ar ?: ($existing['name_ar'] ?? $request->company_name),
-                'name_en' => $company?->name_en ?: ($existing['name_en'] ?? $request->company_name),
-                'requests_count' => count($numbers),
-                'request_numbers' => $numbers,
-                'linked' => $companyId !== null,
-            ]);
-        }
-
-        return $grouped
-            ->sortBy(fn (array $company) => mb_strtolower((string) ($company['name_ar'] ?: $company['name_en'])))
-            ->values()
-            ->all();
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    private function companiesByNormalizedName(?string $teamId): array
-    {
-        if ($teamId === null || $teamId === '') {
+        if (! is_string($teamId) || $teamId === '') {
             return [];
         }
 
-        $index = [];
+        $stats = RecordedCourseEnrollment::query()
+            ->where('recorded_course_enrollments.team_id', $teamId)
+            ->join('trainees', 'trainees.id', '=', 'recorded_course_enrollments.trainee_id')
+            ->whereNotNull('trainees.company_id')
+            ->groupBy('trainees.company_id')
+            ->select([
+                'trainees.company_id',
+                DB::raw('COUNT(recorded_course_enrollments.id) as enrollments_count'),
+                DB::raw('SUM(CASE WHEN recorded_course_enrollments.completed_at IS NOT NULL THEN 1 ELSE 0 END) as completed_count'),
+            ])
+            ->get()
+            ->keyBy('company_id');
 
-        Company::query()
-            ->where('team_id', $teamId)
-            ->get(['id', 'name_ar', 'name_en'])
-            ->each(function (Company $company) use (&$index): void {
-                foreach ([$company->name_ar, $company->name_en] as $name) {
-                    $key = $this->normalizeName((string) $name);
-                    if ($key !== '' && ! isset($index[$key])) {
-                        $index[$key] = $company->id;
-                    }
-                }
-            });
-
-        return $index;
-    }
-
-    /**
-     * @param  array<string, string>  $companiesByName
-     */
-    private function resolveCompanyId(TrainingDisclosureRequest $request, array $companiesByName): ?string
-    {
-        if (is_string($request->company_id) && $request->company_id !== '') {
-            return $request->company_id;
+        if ($stats->isEmpty()) {
+            return [];
         }
 
-        $key = $this->normalizeName($request->company_name);
+        return Company::query()
+            ->whereIn('id', $stats->keys()->all())
+            ->get(['id', 'name_ar', 'name_en'])
+            ->map(function (Company $company) use ($stats): array {
+                $row = $stats->get($company->id);
 
-        return $companiesByName[$key] ?? null;
+                return [
+                    'id' => $company->id,
+                    'company_id' => $company->id,
+                    'name_ar' => $company->name_ar,
+                    'name_en' => $company->name_en,
+                    'enrollments_count' => (int) ($row->enrollments_count ?? 0),
+                    'completed_count' => (int) ($row->completed_count ?? 0),
+                    'linked' => true,
+                    'request_numbers' => [],
+                ];
+            })
+            ->sortBy(fn (array $company) => mb_strtolower((string) ($company['name_ar'] ?: $company['name_en'])))
+            ->values()
+            ->all();
     }
 
     /**
@@ -239,12 +208,5 @@ class TrainingDisclosureCompanyReportService
                 return in_array($row['entitlement'] ?? '', ['eligible', 'certificate_sent'], true);
             })->count(),
         ];
-    }
-
-    private function normalizeName(string $name): string
-    {
-        $name = trim(preg_replace('/\s+/u', ' ', $name) ?? '');
-
-        return mb_strtolower($name);
     }
 }
