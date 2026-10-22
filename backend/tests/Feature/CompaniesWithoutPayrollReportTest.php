@@ -60,6 +60,8 @@ class CompaniesWithoutPayrollReportTest extends TestCase
             'source_sheet' => '2026',
             'synced_at' => now(),
         ]);
+        $oldInvoice = $this->makeInvoice($missing, $trainee, '2026-03-01');
+        $oldInvoice->forceFill(['created_at' => '2026-03-10 12:00:00'])->save();
 
         $paid = $this->makeCompany('شركة لديها فواتير');
         $paidTrainee = $this->makeTrainee($paid, '1108800093');
@@ -91,7 +93,67 @@ class CompaniesWithoutPayrollReportTest extends TestCase
                 ->where('rows.0.company_id', $missing->id)
                 ->where('rows.0.trainees_count', 1)
                 ->where('rows.0.earliest_start_date', '2026-04-01')
+                ->where('rows.0.last_invoice_at', '2026-03-10')
+                ->where('rows.0.missing_months_count', 1)
+                ->where('rows.0.months.0.key', '2026-05')
+                ->where('rows.0.months.0.label', '05/2026')
+                ->where('rows.0.months.0.has_invoice', false)
                 ->where('rows.0.trainees.0.trainee_id', $trainee->id)
+            );
+    }
+
+    public function test_orders_companies_from_worst_to_best_with_month_coverage(): void
+    {
+        $worst = $this->makeCompany('أ أسوأ شركة');
+        $worstTrainee = $this->makeTrainee($worst, '1104839079');
+        TraineeDocumentationDate::query()->create([
+            'identity_number' => '1104839079',
+            'documented_on' => '2026-01-01',
+            'source_sheet' => '2026',
+            'synced_at' => now(),
+        ]);
+
+        $partial = $this->makeCompany('ب شركة جزئية');
+        $partialTrainee = $this->makeTrainee($partial, '1108800093');
+        TraineeDocumentationDate::query()->create([
+            'identity_number' => '1108800093',
+            'documented_on' => '2026-01-01',
+            'source_sheet' => '2026',
+            'synced_at' => now(),
+        ]);
+        $this->makeInvoice($partial, $partialTrainee, '2026-04-10');
+
+        $complete = $this->makeCompany('ج شركة مكتملة');
+        $completeTrainee = $this->makeTrainee($complete, '1079494041');
+        TraineeDocumentationDate::query()->create([
+            'identity_number' => '1079494041',
+            'documented_on' => '2026-01-01',
+            'source_sheet' => '2026',
+            'synced_at' => now(),
+        ]);
+        $this->makeInvoice($complete, $completeTrainee, '2026-04-01');
+        $this->makeInvoice($complete, $completeTrainee, '2026-05-01');
+        $this->makeInvoice($complete, $completeTrainee, '2026-06-01');
+
+        $this->get(route('back.finance.companies-without-payroll', [
+            'date_from' => '2026-04-01',
+            'date_to' => '2026-06-30',
+        ]))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Back/Finance/CompaniesWithoutPayroll')
+                ->has('rows', 2)
+                ->where('rows.0.company_id', $worst->id)
+                ->where('rows.0.missing_months_count', 3)
+                ->where('rows.0.months.0.has_invoice', false)
+                ->where('rows.0.months.1.has_invoice', false)
+                ->where('rows.0.months.2.has_invoice', false)
+                ->where('rows.1.company_id', $partial->id)
+                ->where('rows.1.missing_months_count', 2)
+                ->where('rows.1.months.0.has_invoice', true)
+                ->where('rows.1.months.0.label', '04/2026')
+                ->where('rows.1.months.1.has_invoice', false)
+                ->where('rows.1.months.2.has_invoice', false)
             );
     }
 

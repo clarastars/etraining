@@ -2,7 +2,7 @@
 
 ## Overview
 
-Lists companies that have trainees with a تاريخ مباشرة, but no invoices whose `from_date` falls in the selected period. That means they have not issued payroll for that period.
+Lists companies that have trainees with a تاريخ مباشرة and are missing invoices for at least one calendar month in the selected range. Under each company name is a credit-style month strip: green when an invoice `from_date` exists in that month, red when it does not.
 
 تاريخ المباشرة comes from the cached `trainee_documentation_dates` table (Drive sheet تاريخ التوثيق), the same source used by تقرير الفواتير (تفاصيل).
 
@@ -18,15 +18,23 @@ A company appears when all of these are true:
 
 1. It has at least one trainee (current team) whose identity exists in `trainee_documentation_dates`.
 2. That trainee’s `documented_on` is on or before `date_to`.
-3. The company has **no** invoices with `from_date` between `date_from` and `date_to` (any status).
+3. At least one calendar month between `date_from` and `date_to` has **no** invoice with `from_date` in that month.
 
-Companies that already have any invoice in the period are excluded, even if some trainees are missing invoices. Use the trainees-without-invoices report for that case.
+Companies that issued invoices for every month in the range are excluded.
+
+## Ordering
+
+Worst → best:
+
+1. Most missing months first
+2. Then oldest last invoice `created_at` (never invoiced first)
+3. Then company name
 
 ## Screen
 
-- One row per company: name, code, trainee count, earliest start date.
-- Expand a row to see trainee name, identity, and start date.
-- Excel exports one line per trainee under those companies.
+- One row per company: name (with link to the company page), month circles (`mm/yyyy`), code, trainee count, earliest start date, last invoice `created_at`.
+- Expand a row to see trainee name (with link to the trainee profile), identity, and start date.
+- Excel exports one line per trainee under those companies, including missing-month count and month coverage.
 
 ## Permission
 
