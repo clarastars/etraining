@@ -13,17 +13,20 @@ use Illuminate\Support\Collection;
 class CompaniesWithoutPayrollReportService
 {
     /**
-     * Companies that have trainees with a تاريخ المباشرة on or before the period end,
-     * and are missing invoices for at least one calendar month in the selected range.
+     * Companies that have trainees with a تاريخ المباشرة (documentation sheet),
+     * and are missing invoices for at least one owed calendar month in the range.
      *
-     * Sorted worst → good: most missing months first.
+     * A month is owed only from the month AFTER the company's earliest trainee
+     * تاريخ المباشرة (joining on the 1st still starts the following month).
+     *
+     * Sorted worst → good: most missing owed months first.
      *
      * @return array<int, array<string, mixed>>
      */
     public function rows(string $dateFrom, string $dateTo, ?string $teamId = null): array
     {
         $teamId = $teamId ?? optional(auth()->user())->current_team_id;
-        $startedByIdentity = $this->startedIdentities($dateTo);
+        $startedByIdentity = $this->startedIdentities();
         $months = $this->monthsInRange($dateFrom, $dateTo);
 
         if ($startedByIdentity->isEmpty() || $months === []) {
@@ -65,24 +68,6 @@ class CompaniesWithoutPayrollReportService
                 $company = $first->company;
                 $coveredMonths = $invoiceMonthsByCompany->get($company->id, collect());
 
-                $monthStatuses = [];
-                $missingMonths = 0;
-                foreach ($months as $month) {
-                    $hasInvoice = $coveredMonths->has($month['key']);
-                    if (! $hasInvoice) {
-                        $missingMonths++;
-                    }
-                    $monthStatuses[] = [
-                        'key' => $month['key'],
-                        'label' => $month['label'],
-                        'has_invoice' => $hasInvoice,
-                    ];
-                }
-
-                if ($missingMonths === 0) {
-                    return null;
-                }
-
                 $traineeRows = $companyTrainees
                     ->map(function (Trainee $trainee) use ($startedByIdentity) {
                         $startDate = $startedByIdentity->get($trainee->identity_number);
@@ -94,23 +79,66 @@ class CompaniesWithoutPayrollReportService
                             'start_date' => $startDate,
                         ];
                     })
+                    ->filter(fn (array $row) => $row['start_date'] !== null)
                     ->sortBy('start_date')
-                    ->values()
-                    ->all();
+                    ->values();
 
-                $startDates = collect($traineeRows)->pluck('start_date')->filter()->sort()->values();
+                if ($traineeRows->isEmpty()) {
+                    return null;
+                }
+
+                $earliestStart = $traineeRows->pluck('start_date')->filter()->sort()->first();
+                $firstOwedMonth = Carbon::parse($earliestStart)->startOfMonth()->addMonth();
+
+                $monthStatuses = [];
+                $missingMonths = 0;
+                $owedMonths = 0;
+
+                foreach ($months as $month) {
+                    $monthStart = Carbon::createFromFormat('!Y-m', $month['key'])->startOfMonth();
+                    $owed = $monthStart->gte($firstOwedMonth);
+
+                    if (! $owed) {
+                        $monthStatuses[] = [
+                            'key' => $month['key'],
+                            'label' => $month['label'],
+                            'status' => 'not_owed',
+                            'has_invoice' => false,
+                        ];
+                        continue;
+                    }
+
+                    $owedMonths++;
+                    $hasInvoice = $coveredMonths->has($month['key']);
+                    if (! $hasInvoice) {
+                        $missingMonths++;
+                    }
+
+                    $monthStatuses[] = [
+                        'key' => $month['key'],
+                        'label' => $month['label'],
+                        'status' => $hasInvoice ? 'paid' : 'missing',
+                        'has_invoice' => $hasInvoice,
+                    ];
+                }
+
+                if ($owedMonths === 0 || $missingMonths === 0) {
+                    return null;
+                }
+
                 $lastAt = $lastInvoiceAt->get($company->id);
 
                 return [
                     'company_id' => $company->id,
                     'company_name' => $company->name_ar,
                     'company_code' => $company->code,
-                    'trainees_count' => count($traineeRows),
-                    'earliest_start_date' => $startDates->first(),
+                    'trainees_count' => $traineeRows->count(),
+                    'earliest_start_date' => $earliestStart,
+                    'first_owed_month' => $firstOwedMonth->format('Y-m'),
                     'last_invoice_at' => $lastAt ? Carbon::parse($lastAt)->toDateString() : null,
                     'missing_months_count' => $missingMonths,
                     'months' => $monthStatuses,
-                    'trainees' => $traineeRows,
+                    'trainees' => $traineeRows->all(),
                 ];
             })
             ->filter()
@@ -185,15 +213,16 @@ class CompaniesWithoutPayrollReportService
     /**
      * @return Collection<string, string> identity_number => documented_on (Y-m-d)
      */
-    private function startedIdentities(string $dateTo): Collection
+    private function startedIdentities(): Collection
     {
         return TraineeDocumentationDate::query()
-            ->whereDate('documented_on', '<=', $dateTo)
+            ->whereNotNull('documented_on')
             ->get(['identity_number', 'documented_on'])
             ->mapWithKeys(function (TraineeDocumentationDate $row) {
                 return [
                     $row->identity_number => optional($row->documented_on)->toDateString(),
                 ];
-            });
+            })
+            ->filter();
     }
 }

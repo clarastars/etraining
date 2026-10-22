@@ -43,7 +43,15 @@ class CompaniesWithoutPayrollExport implements FromArray, WithHeadings, WithTitl
 
         foreach ($this->rows as $company) {
             $coverage = collect($company['months'] ?? [])
-                ->map(fn (array $month) => $month['label'].':'.($month['has_invoice'] ? '✓' : '✗'))
+                ->map(function (array $month) {
+                    $mark = match ($month['status'] ?? null) {
+                        'paid' => '✓',
+                        'not_owed' => '–',
+                        default => ($month['has_invoice'] ?? false) ? '✓' : '✗',
+                    };
+
+                    return $month['label'].':'.$mark;
+                })
                 ->implode(' ');
 
             foreach ($company['trainees'] as $trainee) {

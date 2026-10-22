@@ -57,6 +57,8 @@ class TraineeDocumentationDateSheet
             return;
         }
 
+        $sourceSheet = $sheet->getTitle();
+
         for ($row = 2; $row <= $highestRow; $row++) {
             $identity = $this->identity($sheet->getCellByColumnAndRow($identityColumn, $row)->getValue());
             $documentedOn = $this->date($sheet->getCellByColumnAndRow($dateColumn, $row));
@@ -65,17 +67,51 @@ class TraineeDocumentationDateSheet
                 continue;
             }
 
-            $existing = $dates[$identity]['documented_on'] ?? null;
-            if ($existing !== null && $existing >= $documentedOn) {
+            if (! $this->shouldReplace($dates[$identity] ?? null, $documentedOn, $sourceSheet)) {
                 continue;
             }
 
             $dates[$identity] = [
                 'identity_number' => $identity,
                 'documented_on' => $documentedOn,
-                'source_sheet' => $sheet->getTitle(),
+                'source_sheet' => $sourceSheet,
             ];
         }
+    }
+
+    /**
+     * Newer year tabs win even when the date value is older (sheet corrections / company moves).
+     * Same year: a different date replaces the previous value.
+     *
+     * @param  array{identity_number: string, documented_on: string, source_sheet: string}|null  $existing
+     */
+    private function shouldReplace(?array $existing, string $documentedOn, string $sourceSheet): bool
+    {
+        if ($existing === null) {
+            return true;
+        }
+
+        $existingYear = $this->sheetYear($existing['source_sheet']);
+        $newYear = $this->sheetYear($sourceSheet);
+
+        if ($newYear !== null && $existingYear !== null && $newYear !== $existingYear) {
+            return $newYear > $existingYear;
+        }
+
+        if ($newYear !== null && $existingYear !== null && $newYear === $existingYear) {
+            return $documentedOn !== $existing['documented_on'];
+        }
+
+        return $documentedOn > $existing['documented_on'];
+    }
+
+    private function sheetYear(string $title): ?int
+    {
+        if (preg_match('/(20\d{2})/', $title, $matches) !== 1) {
+            return null;
+        }
+
+        return (int) $matches[1];
     }
 
     private function normalizeHeader(mixed $value): string

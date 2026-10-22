@@ -52,4 +52,57 @@ class TraineeDocumentationDateSheetTest extends TestCase
         $this->assertSame('2024-01-03', $rows['1080488271']['documented_on']);
         $this->assertSame('2024', $rows['1080488271']['source_sheet']);
     }
+
+    public function test_newer_year_sheet_wins_even_when_date_is_earlier(): void
+    {
+        $book = new Spreadsheet();
+        $older = $book->getActiveSheet();
+        $older->setTitle('2025');
+        $older->fromArray([
+            ['الهوية', 'تاريخ التوثيق'],
+            ['1104839079', '20/12/2025'],
+        ]);
+
+        $current = $book->createSheet();
+        $current->setTitle('2026');
+        $current->fromArray([
+            ['الهوية', 'تاريخ التوثيق'],
+            ['1104839079', '12/10/2026'],
+        ]);
+
+        $path = tempnam(sys_get_temp_dir(), 'docs').'.xlsx';
+        (new Xlsx($book))->save($path);
+
+        try {
+            $rows = (new TraineeDocumentationDateSheet())->rows($path);
+        } finally {
+            unlink($path);
+        }
+
+        $this->assertSame('2026-10-12', $rows['1104839079']['documented_on']);
+        $this->assertSame('2026', $rows['1104839079']['source_sheet']);
+    }
+
+    public function test_same_year_sheet_updates_when_date_differs(): void
+    {
+        $book = new Spreadsheet();
+        $sheet = $book->getActiveSheet();
+        $sheet->setTitle('2026');
+        $sheet->fromArray([
+            ['الهوية', 'تاريخ التوثيق'],
+            ['1104839079', '01/01/2026'],
+            ['1104839079', '12/10/2026'],
+        ]);
+
+        $path = tempnam(sys_get_temp_dir(), 'docs').'.xlsx';
+        (new Xlsx($book))->save($path);
+
+        try {
+            $rows = (new TraineeDocumentationDateSheet())->rows($path);
+        } finally {
+            unlink($path);
+        }
+
+        $this->assertSame('2026-10-12', $rows['1104839079']['documented_on']);
+    }
 }

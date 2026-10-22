@@ -86,11 +86,11 @@
                                         v-for="month in row.months"
                                         :key="month.key"
                                         class="flex flex-col items-center"
-                                        :title="month.has_invoice ? $t('words.payroll-month-issued') : $t('words.payroll-month-missing')"
+                                        :title="monthStatusTitle(month)"
                                     >
                                         <span
                                             class="inline-block w-3 h-3 rounded-full"
-                                            :class="month.has_invoice ? 'bg-green-500' : 'bg-red-500'"
+                                            :class="monthStatusClass(month)"
                                         ></span>
                                         <span class="mt-1 text-[10px] leading-none text-gray-500">{{ month.label }}</span>
                                     </div>
@@ -207,6 +207,26 @@
             },
             toggle(companyId) {
                 this.$set(this.expanded, companyId, !this.expanded[companyId])
+            },
+            monthStatusClass(month) {
+                if (month.status === 'paid' || month.has_invoice) {
+                    return 'bg-green-500'
+                }
+                if (month.status === 'not_owed') {
+                    return 'bg-gray-300'
+                }
+
+                return 'bg-red-500'
+            },
+            monthStatusTitle(month) {
+                if (month.status === 'paid' || month.has_invoice) {
+                    return this.$t('words.payroll-month-issued')
+                }
+                if (month.status === 'not_owed') {
+                    return this.$t('words.payroll-month-not-owed')
+                }
+
+                return this.$t('words.payroll-month-missing')
             },
         },
     }

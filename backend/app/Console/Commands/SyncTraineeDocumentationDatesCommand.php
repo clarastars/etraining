@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Models\Back\Trainee;
 use App\Models\TraineeDocumentationDate;
 use App\Support\TraineeDocumentationDateSheet;
 use Google\Client as GoogleClient;
@@ -50,7 +51,9 @@ class SyncTraineeDocumentationDatesCommand extends Command
             ];
         }
 
-        DB::transaction(function () use ($payload, $syncedAt): void {
+        $linkedUpdated = 0;
+
+        DB::transaction(function () use ($payload, $syncedAt, &$linkedUpdated): void {
             foreach (array_chunk($payload, 500) as $chunk) {
                 TraineeDocumentationDate::query()->upsert(
                     $chunk,
@@ -65,9 +68,20 @@ class SyncTraineeDocumentationDatesCommand extends Command
                         ->orWhereNull('synced_at');
                 })
                 ->delete();
+
+            foreach ($payload as $row) {
+                $linkedUpdated += Trainee::withTrashed()
+                    ->where('identity_number', $row['identity_number'])
+                    ->where(function ($query) use ($row): void {
+                        $query->whereNull('linked_date')
+                            ->orWhereDate('linked_date', '!=', $row['documented_on']);
+                    })
+                    ->update(['linked_date' => $row['documented_on']]);
+            }
         });
 
         $this->info('Stored '.count($payload).' documentation dates.');
+        $this->info('Updated linked_date on '.$linkedUpdated.' trainee rows where it differed.');
 
         return self::SUCCESS;
     }
